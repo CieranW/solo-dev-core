@@ -1,0 +1,11 @@
+version = 1
+id = "large-and-generated-file-radar"
+kind = "cron"
+name = "Large and Generated File Radar"
+prompt = "Scan local repos under /Users/cieranwong/repos for large, generated, cache, export, or database files that may need cleanup or gitignore updates. Ignore /Users/cieranwong/repos/CAMDAR completely unless the user explicitly asks about it in a future task. Do not delete files, edit .gitignore, create commits, push, or mutate repos. Report large tracked and untracked files, build/dist/cache folders, generated reports, PDFs, HTML exports, local SQLite/Postgres dumps, node_modules/venv artifacts inside repos, and files that look accidental. Group by likely safe to ignore, user decision needed, and expected project artifact. Include sizes, paths, tracked/untracked status, and safe next actions."
+status = "PAUSED"
+rrule = "FREQ=WEEKLY;BYDAY=TH;BYHOUR=8;BYMINUTE=30;BYSECOND=0"
+model = "gpt-5.5"
+reasoning_effort = "medium"
+execution_environment = "local"
+cwds = ["/Users/cieranwong/repos"]

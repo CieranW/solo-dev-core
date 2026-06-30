@@ -1,0 +1,12 @@
+version = 1
+id = "todo-fixme-debt-digest"
+kind = "cron"
+name = "TODO FIXME Debt Digest"
+prompt = "Scan active repos under /Users/cieranwong/repos for TODO, FIXME, HACK, XXX, and similar markers. Ignore /Users/cieranwong/repos/CAMDAR completely unless the user explicitly asks about it in a future task. Do not edit files, create issues, create commits, push, or mutate repos. Exclude vendor, dependency, build, cache, and virtualenv folders. Group findings by repo and classify them as worth fixing, stale/noisy, should become docs/issues, or likely intentional. Include file paths, line numbers, short snippets, and safe next actions without quoting large source blocks."
+status = "PAUSED"
+rrule = "FREQ=WEEKLY;BYDAY=TH;BYHOUR=11;BYMINUTE=0;BYSECOND=0"
+model = "gpt-5.5"
+reasoning_effort = "medium"
+execution_environment = "local"
+cwds = ["/Users/cieranwong/repos"]
+

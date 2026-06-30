@@ -1,0 +1,12 @@
+version = 1
+id = "dependency-refresh-radar"
+kind = "cron"
+name = "Dependency Refresh Radar"
+prompt = "Produce a dependency refresh radar for active repos under /Users/cieranwong/repos. Ignore /Users/cieranwong/repos/CAMDAR completely unless the user explicitly asks about it in a future task. Do not edit files, install dependencies, run upgrades, create commits, push, or mutate repos. Inspect Python pyproject.toml/requirements files, Node package.json/package-lock/yarn/pnpm lockfiles, Java pom.xml, Docker base images, and dependency docs. Report missing or stale lockfiles, missing dependency documentation, old pinned versions when detectable without installing tools, mismatches between manifests and docs, and repos that need a manual dependency review. Use network only if already available; otherwise label latest-version checks as not verified."
+status = "PAUSED"
+rrule = "FREQ=MONTHLY;BYDAY=WE;BYSETPOS=1;BYHOUR=10;BYMINUTE=0;BYSECOND=0"
+model = "gpt-5.5"
+reasoning_effort = "medium"
+execution_environment = "local"
+cwds = ["/Users/cieranwong/repos"]
+

@@ -1,0 +1,11 @@
+version = 1
+id = "open-pr-and-ci-failure-digest"
+kind = "cron"
+name = "Open PR and CI Failure Digest"
+prompt = "Produce an open PR and CI failure digest for the GitHub repositories connected to local repos under /Users/cieranwong/repos. Ignore /Users/cieranwong/repos/CAMDAR completely unless the user explicitly asks about it in a future task. Do not edit files, create commits, push, merge PRs, close PRs, rerun workflows, or mutate repositories. Use local Git remotes and GitHub CLI when available to report open PRs, failing checks, stale PR branches, branches ready to merge, branches without PRs, and repos where GitHub status could not be verified. Group by urgent, ready for review/merge, stale, and not verified. Include exact repo paths and GitHub URLs when available."
+status = "PAUSED"
+rrule = "FREQ=WEEKLY;BYDAY=MO;BYHOUR=11;BYMINUTE=0;BYSECOND=0"
+model = "gpt-5.5"
+reasoning_effort = "medium"
+execution_environment = "local"
+cwds = ["/Users/cieranwong/repos"]

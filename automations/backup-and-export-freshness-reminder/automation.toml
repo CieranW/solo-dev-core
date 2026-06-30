@@ -1,0 +1,11 @@
+version = 1
+id = "backup-and-export-freshness-reminder"
+kind = "cron"
+name = "Backup and Export Freshness Reminder"
+prompt = "Check freshness of local-only backups, exports, reports, PDFs, generated outputs, and app data across repos under /Users/cieranwong/repos. Ignore /Users/cieranwong/repos/CAMDAR completely unless the user explicitly asks about it in a future task. Do not create backups, export files, upload files, edit repos, create commits, push, or mutate data. Focus on repos that produce reports, PDFs, generated artifacts, SQLite databases, app exports, or handoff outputs. Report outputs that look stale, local-only, not documented, not backed up, or needing regeneration. Include paths, timestamps, tracked/untracked status, and safe next actions."
+status = "PAUSED"
+rrule = "FREQ=WEEKLY;BYDAY=FR;BYHOUR=14;BYMINUTE=0;BYSECOND=0"
+model = "gpt-5.5"
+reasoning_effort = "medium"
+execution_environment = "local"
+cwds = ["/Users/cieranwong/repos"]

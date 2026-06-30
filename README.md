@@ -30,6 +30,8 @@ The tracked global Codex instruction source lives at `global/AGENTS.md`. The rep
 - `docs-artifact-export-reminder`: weekly documentation artifact export reminder.
 - `personal-project-archive-radar`: monthly personal repo archive/ignore radar.
 
+The following automations are implemented but paused until their schedule is confirmed: `automation-health-check`, `open-pr-and-ci-failure-digest`, `local-secret-and-env-drift-audit`, `large-and-generated-file-radar`, `dependency-refresh-radar`, `new-repo-onboarding-detector`, `todo-fixme-debt-digest`, and `backup-and-export-freshness-reminder`.
+
 Automation definitions are tracked in `automations/`. The live Codex automation should be kept aligned with the checked-in file when its prompt, schedule, model, or scope changes.
 
 CAMDAR is intentionally excluded from personal workflow automations unless explicitly requested again.
