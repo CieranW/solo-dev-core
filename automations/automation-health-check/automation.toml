@@ -6,6 +6,6 @@ prompt = "Verify Codex automation health for /Users/cieranwong/repos/solo-dev-co
 status = "ACTIVE"
 rrule = "FREQ=WEEKLY;BYDAY=MO;BYHOUR=0;BYMINUTE=0;BYSECOND=0"
 model = "gpt-5.5"
-reasoning_effort = "low"
+reasoning_effort = "high"
 execution_environment = "local"
 cwds = ["/Users/cieranwong/repos/solo-dev-core"]

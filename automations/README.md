@@ -27,7 +27,7 @@ All automations should be report-only by default. They may inspect local repos, 
 
 ## Midnight Schedule
 
-All schedules run at local midnight and use low reasoning by default.
+All schedules run at local midnight and use high reasoning by default.
 
 | Day | Automations |
 | --- | --- |

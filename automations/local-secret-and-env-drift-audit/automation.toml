@@ -6,6 +6,6 @@ prompt = "Audit local repos under /Users/cieranwong/repos for secret and environ
 status = "ACTIVE"
 rrule = "FREQ=WEEKLY;BYDAY=TU;BYHOUR=0;BYMINUTE=0;BYSECOND=0"
 model = "gpt-5.5"
-reasoning_effort = "low"
+reasoning_effort = "high"
 execution_environment = "local"
 cwds = ["/Users/cieranwong/repos"]

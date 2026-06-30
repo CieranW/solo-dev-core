@@ -38,7 +38,7 @@ The tracked global Codex instruction source lives at `global/AGENTS.md`. The rep
 - `todo-fixme-debt-digest`: weekly TODO/FIXME/HACK debt digest.
 - `backup-and-export-freshness-reminder`: weekly backup/export freshness reminder.
 
-All automations run at local midnight, staggered Monday through Friday, and use low reasoning by default to reduce recurring token usage.
+All automations run at local midnight, staggered Monday through Friday, and use high reasoning by default for deeper overnight analysis.
 
 Automation definitions are tracked in `automations/`. The live Codex automation should be kept aligned with the checked-in file when its prompt, schedule, model, or scope changes.
 

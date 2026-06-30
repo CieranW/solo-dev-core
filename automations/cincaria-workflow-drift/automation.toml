@@ -6,6 +6,6 @@ prompt = "Audit Cincaria workflow drift using /Users/cieranwong/repos/Cincaria/c
 status = "ACTIVE"
 rrule = "FREQ=WEEKLY;BYDAY=WE;BYHOUR=0;BYMINUTE=0;BYSECOND=0"
 model = "gpt-5.5"
-reasoning_effort = "low"
+reasoning_effort = "high"
 execution_environment = "local"
 cwds = ["/Users/cieranwong/repos/Cincaria/cincaria-devsecops", "/Users/cieranwong/repos/Cincaria"]

@@ -6,6 +6,6 @@ prompt = "Produce an open PR and CI failure digest for the GitHub repositories c
 status = "ACTIVE"
 rrule = "FREQ=WEEKLY;BYDAY=MO;BYHOUR=0;BYMINUTE=0;BYSECOND=0"
 model = "gpt-5.5"
-reasoning_effort = "low"
+reasoning_effort = "high"
 execution_environment = "local"
 cwds = ["/Users/cieranwong/repos"]

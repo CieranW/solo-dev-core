@@ -6,6 +6,6 @@ prompt = "Produce a local-first operations brief for /Users/cieranwong/repos/Sig
 status = "ACTIVE"
 rrule = "FREQ=WEEKLY;BYDAY=FR;BYHOUR=0;BYMINUTE=0;BYSECOND=0"
 model = "gpt-5.5"
-reasoning_effort = "low"
+reasoning_effort = "high"
 execution_environment = "local"
 cwds = ["/Users/cieranwong/repos/Signal Shelf"]

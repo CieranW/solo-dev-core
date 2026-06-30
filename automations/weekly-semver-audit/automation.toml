@@ -6,6 +6,6 @@ prompt = "Audit the local repositories under /Users/cieranwong/repos for semanti
 status = "ACTIVE"
 rrule = "FREQ=WEEKLY;BYDAY=TU;BYHOUR=0;BYMINUTE=0;BYSECOND=0"
 model = "gpt-5.5"
-reasoning_effort = "low"
+reasoning_effort = "high"
 execution_environment = "local"
 cwds = ["/Users/cieranwong/repos"]

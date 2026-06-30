@@ -6,6 +6,6 @@ prompt = "Classify low-signal or inactive personal repos under /Users/cieranwong
 status = "ACTIVE"
 rrule = "FREQ=MONTHLY;BYDAY=TH;BYSETPOS=-1;BYHOUR=0;BYMINUTE=0;BYSECOND=0"
 model = "gpt-5.5"
-reasoning_effort = "low"
+reasoning_effort = "high"
 execution_environment = "local"
 cwds = ["/Users/cieranwong/repos"]
