@@ -4,6 +4,8 @@ Personal Codex plugin source for reusable solo-developer workflows.
 
 This repository is the durable home for skills and automation specs. The local installed copy under `~/.codex/plugins/solo-dev-core` can be refreshed from this repo, but future edits should start here.
 
+The tracked global Codex instruction source lives at `global/AGENTS.md`. The repo root `AGENTS.md` is intentionally repo-specific guidance for working on this repository.
+
 ## Skills
 
 - `clarify-intent`: tighten fuzzy requests before implementation.
@@ -20,6 +22,11 @@ This repository is the durable home for skills and automation specs. The local i
 - `weekly-semver-audit`: weekly report-only scan of `/Users/cieranwong/repos` for versioning health.
 
 Automation definitions are tracked in `automations/`. The live Codex automation should be kept aligned with the checked-in file when its prompt, schedule, model, or scope changes.
+
+## Global Instructions
+
+- `global/AGENTS.md`: source copy for `~/.codex/AGENTS.md`.
+- Root `AGENTS.md`: repo-local instructions for this source repository.
 
 ## Local Setup
 
@@ -44,4 +51,3 @@ print("skill frontmatter ok")
 PY
 git diff --check
 ```
-

@@ -8,6 +8,7 @@ This repo is the source of truth for Cieran's personal Codex skills and automati
 - `skills/<skill-name>/SKILL.md` holds each skill's behavior contract.
 - `skills/<skill-name>/agents/openai.yaml` holds Codex app display metadata.
 - `automations/<automation-id>/automation.toml` mirrors Codex automation definitions that should be preserved and evolved here.
+- `global/AGENTS.md` tracks the global Codex instructions source copy.
 
 ## Workflow
 
@@ -16,6 +17,7 @@ This repo is the source of truth for Cieran's personal Codex skills and automati
 - Use `.venv` for any local validation helpers; never commit the venv.
 - When changing skills, validate every `SKILL.md` has frontmatter with `name` and `description`.
 - When changing automations, keep checked-in specs aligned with the live Codex automation config.
+- When changing global instructions, edit `global/AGENTS.md` first, then install it to `~/.codex/AGENTS.md` deliberately.
 
 ## Verification
 
@@ -40,4 +42,3 @@ Before pushing, review:
 git status --short
 git diff --check
 ```
-
