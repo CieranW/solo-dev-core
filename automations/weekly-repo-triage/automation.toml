@@ -1,0 +1,11 @@
+version = 1
+id = "weekly-repo-triage"
+kind = "cron"
+name = "Weekly Repo Triage"
+prompt = "Scan Git repositories under /Users/cieranwong/repos and produce a concise repo triage digest. Ignore /Users/cieranwong/repos/CAMDAR completely unless the user explicitly asks about it in a future task. Do not edit files, create commits, delete branches, clean worktrees, push, or mutate repositories. Report dirty repos, untracked-file counts, current branches, upstream/missing-upstream state, branches ahead/behind when visible, repos with no remote, repos with no commits or no manifests, stale branches inferred from recent commit dates, and repos that need user attention. Group results as urgent, normal follow-up, and clean/no action. Include exact repo paths and safe next actions."
+status = "ACTIVE"
+rrule = "FREQ=WEEKLY;BYDAY=MO;BYHOUR=8;BYMINUTE=0;BYSECOND=0"
+model = "gpt-5.5"
+reasoning_effort = "medium"
+execution_environment = "local"
+cwds = ["/Users/cieranwong/repos"]

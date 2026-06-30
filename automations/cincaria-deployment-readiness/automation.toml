@@ -1,0 +1,12 @@
+version = 1
+id = "cincaria-deployment-readiness"
+kind = "cron"
+name = "Cincaria Deployment Readiness"
+prompt = "Produce a weekly deployment-readiness digest for /Users/cieranwong/repos/Cincaria/HRDCS, /Users/cieranwong/repos/Cincaria/cincaria-ops, and /Users/cieranwong/repos/Cincaria/CINCARIA-data-platform. Do not edit files, create commits, build images, deploy, push, or mutate repos. Inspect repo guidance, compose files, Dockerfiles, release workflows, CI workflows, deployment docs, dirty state, and known verification commands. Report readiness by repo: CI coverage, compose config command presence, release workflow settings, image publish/deploy flags, migration/health commands, environment/secrets blockers, server-readiness gaps, and next safe action. Use GitHub CLI only if available and authenticated; otherwise label remote CI status as not verified."
+status = "ACTIVE"
+rrule = "FREQ=WEEKLY;BYDAY=WE;BYHOUR=9;BYMINUTE=0;BYSECOND=0"
+model = "gpt-5.5"
+reasoning_effort = "medium"
+execution_environment = "local"
+cwds = ["/Users/cieranwong/repos/Cincaria/HRDCS", "/Users/cieranwong/repos/Cincaria/cincaria-ops", "/Users/cieranwong/repos/Cincaria/CINCARIA-data-platform"]
+

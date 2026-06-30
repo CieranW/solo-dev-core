@@ -1,0 +1,11 @@
+version = 1
+id = "agents-coverage-audit"
+kind = "cron"
+name = "AGENTS Coverage Audit"
+prompt = "Audit repo-level AGENTS.md coverage under /Users/cieranwong/repos. Ignore /Users/cieranwong/repos/CAMDAR completely unless the user explicitly asks about it in a future task. Do not edit files, create AGENTS files, create commits, push, or mutate repos. Identify active repos missing AGENTS.md, stale AGENTS.md files that omit obvious stack/scripts/verification paths, and repos where root AGENTS.md should delegate to nested project guidance. Use manifests, README files, scripts, workflows, and dirty state to classify priority. Produce concise proposed contents or bullet outlines for each recommended repo-level AGENTS.md, but do not write them."
+status = "ACTIVE"
+rrule = "FREQ=MONTHLY;BYDAY=TU;BYSETPOS=1;BYHOUR=10;BYMINUTE=0;BYSECOND=0"
+model = "gpt-5.5"
+reasoning_effort = "medium"
+execution_environment = "local"
+cwds = ["/Users/cieranwong/repos"]

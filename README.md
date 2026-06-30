@@ -20,8 +20,19 @@ The tracked global Codex instruction source lives at `global/AGENTS.md`. The rep
 ## Automations
 
 - `weekly-semver-audit`: weekly report-only scan of `/Users/cieranwong/repos` for versioning health.
+- `weekly-repo-triage`: weekly repo hygiene and attention digest.
+- `solo-dev-core-sync-guard`: weekly source-of-truth parity check for skills, global instructions, cache, and automation specs.
+- `cincaria-workflow-drift`: weekly Cincaria workflow/template drift radar.
+- `cincaria-deployment-readiness`: weekly deployment-readiness digest for core Cincaria apps.
+- `hrdcs-report-handoff`: weekly HRDCS Finance/HR report handoff sentinel.
+- `signal-shelf-local-ops`: weekly local-first Signal Shelf operations brief.
+- `agents-coverage-audit`: monthly repo-level `AGENTS.md` coverage audit.
+- `docs-artifact-export-reminder`: weekly documentation artifact export reminder.
+- `personal-project-archive-radar`: monthly personal repo archive/ignore radar.
 
 Automation definitions are tracked in `automations/`. The live Codex automation should be kept aligned with the checked-in file when its prompt, schedule, model, or scope changes.
+
+CAMDAR is intentionally excluded from personal workflow automations unless explicitly requested again.
 
 ## Global Instructions
 

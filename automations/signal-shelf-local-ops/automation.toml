@@ -1,0 +1,12 @@
+version = 1
+id = "signal-shelf-local-ops"
+kind = "cron"
+name = "Signal Shelf Local Ops"
+prompt = "Produce a local-first operations brief for /Users/cieranwong/repos/Signal Shelf. Do not edit files, create commits, start long-running services, push, deploy, or mutate local data. Inspect repo state, README setup, docker compose status if available, and local endpoints only if the stack is already running. If running, check health/readiness/scheduler/source-health/summary-related endpoints using existing documented routes and report status. If not running, report that clearly with branch, dirty state, env blockers such as WEB_ADMIN_PASSWORD, and the safest next command to verify manually. Use the built-in browser only for any UI verification request; do not use Chrome."
+status = "ACTIVE"
+rrule = "FREQ=WEEKLY;BYDAY=FR;BYHOUR=17;BYMINUTE=0;BYSECOND=0"
+model = "gpt-5.5"
+reasoning_effort = "medium"
+execution_environment = "local"
+cwds = ["/Users/cieranwong/repos/Signal Shelf"]
+
