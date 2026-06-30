@@ -1,0 +1,4 @@
+interface:
+  display_name: "Commit And Push"
+  short_description: "Stage, commit, and push Git work safely."
+  default_prompt: "Use commit-and-push to review, commit, and push the current changes."

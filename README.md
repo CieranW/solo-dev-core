@@ -1,0 +1,47 @@
+# solo-dev-core
+
+Personal Codex plugin source for reusable solo-developer workflows.
+
+This repository is the durable home for skills and automation specs. The local installed copy under `~/.codex/plugins/solo-dev-core` can be refreshed from this repo, but future edits should start here.
+
+## Skills
+
+- `clarify-intent`: tighten fuzzy requests before implementation.
+- `solo-dev-scope`: shrink broad product ideas to the smallest valuable milestone.
+- `repo-compass`: map unfamiliar repos and create concise repo-level guidance.
+- `documentation`: write Markdown docs and useful inline comments.
+- `test-and-verify`: run practical checks before completion claims.
+- `ship-check`: assess whether a branch is ready to push or merge.
+- `commit-and-push`: stage, commit, and push Git work safely.
+- `semantic-versioning`: recommend, prepare, and audit SemVer releases.
+
+## Automations
+
+- `weekly-semver-audit`: weekly report-only scan of `/Users/cieranwong/repos` for versioning health.
+
+Automation definitions are tracked in `automations/`. The live Codex automation should be kept aligned with the checked-in file when its prompt, schedule, model, or scope changes.
+
+## Local Setup
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+No Python package install is currently required for the repo itself.
+
+## Validation
+
+```bash
+python - <<'PY'
+from pathlib import Path
+for path in sorted(Path("skills").glob("*/SKILL.md")):
+    text = path.read_text()
+    assert text.startswith("---\n"), path
+    head = text.split("---", 2)[1]
+    assert "name:" in head and "description:" in head, path
+print("skill frontmatter ok")
+PY
+git diff --check
+```
+

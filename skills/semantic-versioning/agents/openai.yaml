@@ -1,0 +1,4 @@
+interface:
+  display_name: "Semantic Versioning"
+  short_description: "Recommend, prepare, and audit SemVer releases safely."
+  default_prompt: "Use semantic-versioning to inspect changes and recommend the next release version."

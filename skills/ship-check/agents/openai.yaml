@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ship Check"
+  short_description: "Review readiness before commits, releases, and handoffs."
+  default_prompt: "Use ship-check to decide whether this change is ready to ship."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Documentation"
+  short_description: "Write Markdown docs and useful inline comments."
+  default_prompt: "Use documentation to create or review Markdown docs and inline comments."
