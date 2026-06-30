@@ -4,9 +4,8 @@ kind = "cron"
 name = "solo-dev-core Sync Guard"
 prompt = "In /Users/cieranwong/repos/solo-dev-core, verify that the repo remains the source of truth for Codex skills and automations. Do not edit files, create commits, push, install plugins, or mutate configuration. Compare checked-in skills with /Users/cieranwong/.codex/plugins/solo-dev-core/skills, compare checked-in plugin metadata with the live plugin source, compare global/AGENTS.md with /Users/cieranwong/.codex/AGENTS.md, compare checked-in automation definitions with /Users/cieranwong/.codex/automations where accessible, and report installed cache versions under /Users/cieranwong/.codex/plugins/cache/personal/solo-dev-core. Summarize in sync, drift, missing, and recommended next actions."
 status = "ACTIVE"
-rrule = "FREQ=WEEKLY;BYDAY=MO;BYHOUR=8;BYMINUTE=20;BYSECOND=0"
+rrule = "FREQ=WEEKLY;BYDAY=MO;BYHOUR=0;BYMINUTE=0;BYSECOND=0"
 model = "gpt-5.5"
-reasoning_effort = "medium"
+reasoning_effort = "low"
 execution_environment = "local"
 cwds = ["/Users/cieranwong/repos/solo-dev-core"]
-

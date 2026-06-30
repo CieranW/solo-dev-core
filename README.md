@@ -29,8 +29,16 @@ The tracked global Codex instruction source lives at `global/AGENTS.md`. The rep
 - `agents-coverage-audit`: monthly repo-level `AGENTS.md` coverage audit.
 - `docs-artifact-export-reminder`: weekly documentation artifact export reminder.
 - `personal-project-archive-radar`: monthly personal repo archive/ignore radar.
+- `automation-health-check`: weekly live-vs-source automation parity report.
+- `open-pr-and-ci-failure-digest`: weekly GitHub PR and CI digest.
+- `local-secret-and-env-drift-audit`: weekly local secret/env/example drift audit.
+- `large-and-generated-file-radar`: weekly large/generated/cache/export file radar.
+- `dependency-refresh-radar`: monthly dependency refresh report.
+- `new-repo-onboarding-detector`: weekly new or under-onboarded repo detector.
+- `todo-fixme-debt-digest`: weekly TODO/FIXME/HACK debt digest.
+- `backup-and-export-freshness-reminder`: weekly backup/export freshness reminder.
 
-The following automations are implemented but paused until their schedule is confirmed: `automation-health-check`, `open-pr-and-ci-failure-digest`, `local-secret-and-env-drift-audit`, `large-and-generated-file-radar`, `dependency-refresh-radar`, `new-repo-onboarding-detector`, `todo-fixme-debt-digest`, and `backup-and-export-freshness-reminder`.
+All automations run at local midnight, staggered Monday through Friday, and use low reasoning by default to reduce recurring token usage.
 
 Automation definitions are tracked in `automations/`. The live Codex automation should be kept aligned with the checked-in file when its prompt, schedule, model, or scope changes.
 

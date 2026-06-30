@@ -16,11 +16,6 @@ All automations should be report-only by default. They may inspect local repos, 
 - `agents-coverage-audit`: repo-level `AGENTS.md` coverage and freshness audit.
 - `docs-artifact-export-reminder`: docs/report export reminder for changed canonical artifacts.
 - `personal-project-archive-radar`: archive/ignore recommendations for low-signal personal repos.
-
-## Pending Schedule Interview
-
-These automations are implemented but paused until their cadence and timing are confirmed:
-
 - `automation-health-check`: live-vs-source automation parity and schedule overlap report.
 - `open-pr-and-ci-failure-digest`: GitHub PR, CI, and stale review branch digest.
 - `local-secret-and-env-drift-audit`: local secret/env/example/gitignore drift audit.
@@ -29,6 +24,18 @@ These automations are implemented but paused until their cadence and timing are 
 - `new-repo-onboarding-detector`: new or under-onboarded repo detector.
 - `todo-fixme-debt-digest`: TODO/FIXME/HACK debt digest.
 - `backup-and-export-freshness-reminder`: backup/export/artifact freshness reminder.
+
+## Midnight Schedule
+
+All schedules run at local midnight and use low reasoning by default.
+
+| Day | Automations |
+| --- | --- |
+| Monday | `automation-health-check`, `weekly-repo-triage`, `solo-dev-core-sync-guard`, `open-pr-and-ci-failure-digest` |
+| Tuesday | `weekly-semver-audit`, `local-secret-and-env-drift-audit`, `new-repo-onboarding-detector`, `agents-coverage-audit` monthly |
+| Wednesday | `cincaria-workflow-drift`, `cincaria-deployment-readiness`, `dependency-refresh-radar` monthly |
+| Thursday | `large-and-generated-file-radar`, `todo-fixme-debt-digest`, `personal-project-archive-radar` monthly |
+| Friday | `hrdcs-report-handoff`, `docs-artifact-export-reminder`, `backup-and-export-freshness-reminder`, `signal-shelf-local-ops` |
 
 ## Change Policy
 

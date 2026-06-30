@@ -3,10 +3,9 @@ id = "automation-health-check"
 kind = "cron"
 name = "Automation Health Check"
 prompt = "Verify Codex automation health for /Users/cieranwong/repos/solo-dev-core. Do not edit files, create commits, push, create/delete/update automations, or mutate configuration. Compare checked-in automation definitions under automations/ with live definitions under /Users/cieranwong/.codex/automations. Report missing live automations, extra live automations, active vs paused status, prompt or schedule drift, duplicate IDs, duplicate names, overlapping schedules that may create noisy reports, and definitions that still mention excluded repos such as /Users/cieranwong/repos/CAMDAR outside explicit ignore clauses. Recommend safe next actions."
-status = "PAUSED"
-rrule = "FREQ=WEEKLY;BYDAY=MO;BYHOUR=7;BYMINUTE=30;BYSECOND=0"
+status = "ACTIVE"
+rrule = "FREQ=WEEKLY;BYDAY=MO;BYHOUR=0;BYMINUTE=0;BYSECOND=0"
 model = "gpt-5.5"
-reasoning_effort = "medium"
+reasoning_effort = "low"
 execution_environment = "local"
 cwds = ["/Users/cieranwong/repos/solo-dev-core"]
-

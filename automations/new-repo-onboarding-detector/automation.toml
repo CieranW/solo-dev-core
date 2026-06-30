@@ -3,10 +3,9 @@ id = "new-repo-onboarding-detector"
 kind = "cron"
 name = "New Repo Onboarding Detector"
 prompt = "Detect new or under-onboarded repos under /Users/cieranwong/repos and suggest baseline setup. Ignore /Users/cieranwong/repos/CAMDAR completely unless the user explicitly asks about it in a future task. Do not create files, edit repos, create commits, push, or mutate repos. Identify repos missing README, AGENTS.md, .gitignore, remote, initial commit, versioning policy, verification command, or automation inclusion/exclusion decision. For each candidate, recommend the smallest useful onboarding checklist and whether the repo should be active, low-touch, archive, or ignored from normal automation."
-status = "PAUSED"
-rrule = "FREQ=WEEKLY;BYDAY=TU;BYHOUR=11;BYMINUTE=0;BYSECOND=0"
+status = "ACTIVE"
+rrule = "FREQ=WEEKLY;BYDAY=TU;BYHOUR=0;BYMINUTE=0;BYSECOND=0"
 model = "gpt-5.5"
-reasoning_effort = "medium"
+reasoning_effort = "low"
 execution_environment = "local"
 cwds = ["/Users/cieranwong/repos"]
-
