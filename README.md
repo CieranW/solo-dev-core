@@ -14,7 +14,7 @@ The tracked global Codex instruction source lives at `global/AGENTS.md`. The rep
 - `documentation`: write Markdown docs and useful inline comments.
 - `test-and-verify`: run practical checks before completion claims.
 - `ship-check`: assess whether a branch is ready to push or merge.
-- `commit-and-push`: stage, commit, and push Git work safely.
+- `commit-and-push`: stage, commit, and push Git work safely, routing release work through semantic versioning.
 - `semantic-versioning`: recommend, prepare, and audit SemVer releases.
 
 ## Automations

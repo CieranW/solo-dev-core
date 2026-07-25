@@ -35,7 +35,7 @@ Codex must never force-push tags.
 5. If preparing a release, update the version source and `CHANGELOG.md` with dated release notes.
 6. Run relevant verification or state why verification is not available.
 7. Use `ship-check` before release readiness claims.
-8. Use `commit-and-push` for release commits.
+8. After release files are prepared, hand staging, the release commit, and the normal branch push to `commit-and-push`. Keep version decisions and all tag approval or tag operations in this skill.
 9. Ask before creating the tag. Ask again before pushing the tag.
 
 ## Version Source Rules
