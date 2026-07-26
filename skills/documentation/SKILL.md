@@ -9,14 +9,18 @@ Use this skill whenever the work produces `.md` documentation or touches inline 
 
 ## Workflow
 
-1. Identify the reader: future you, a contributor, an operator, a reviewer, or an end user.
-2. Inspect nearby docs and code first so tone, structure, commands, and terminology match the repo.
-3. Prefer updating the closest existing document over creating a new one, unless the topic needs a distinct durable home.
-4. Make Markdown task-oriented: what the reader needs to do, why it matters, exact commands or paths, expected outputs, and troubleshooting notes when relevant.
-5. Keep inline comments rare and useful. Explain intent, constraints, invariants, edge cases, or surprising decisions; do not narrate obvious code.
-6. Remove or rewrite stale, misleading, redundant, or decorative comments.
-7. When documentation describes commands, generated files, APIs, or behavior, verify the claim or label it as unverified.
-8. If a doc is meant to track a plan or decision, include date, status, owner/context, and clear next action.
+1. Identify the document's job and reader: guide, reference, runbook, plan, decision record, contributor note, operator note, or end-user documentation.
+2. Identify the source of truth for every material claim before writing.
+3. Inspect nearby docs and code first so tone, structure, commands, and terminology match the repository.
+4. Prefer updating the closest canonical document over creating a new one. Link to the canonical source instead of duplicating facts across files.
+5. Make task-oriented Markdown concrete: what the reader needs to do, why it matters, exact commands or paths, expected outputs, and troubleshooting notes when relevant.
+6. Verify commands, generated files, APIs, configuration, and behavior, or label the claim as documented but unverified.
+7. Validate changed relative links and referenced repository paths when practical.
+8. Run deterministic, non-destructive command snippets in the relevant environment when practical. Inspect and label stateful, destructive, privileged, platform-specific, or credential-dependent examples instead of executing them casually.
+9. Keep inline comments rare and useful. Explain intent, constraints, invariants, edge cases, or surprising decisions; do not narrate obvious code.
+10. Remove or rewrite stale, misleading, redundant, or decorative documentation and comments.
+11. Review the resulting diff for contradictions, duplicated sources of truth, broken links, stale adjacent text, and accidental secrets or machine-specific values.
+12. For plans and decisions, include date, status, owner or context, decisions, unresolved questions, and the next action.
 
 ## Markdown Standards
 
@@ -24,6 +28,8 @@ Use this skill whenever the work produces `.md` documentation or touches inline 
 - Prefer concrete examples over abstract advice.
 - Use real paths, commands, environment variables, and file names.
 - Keep checklists actionable.
+- Distinguish current behavior, proposed behavior, and historical context.
+- Prefer stable links and identifiers over brittle line numbers or transient output.
 - Avoid filler, marketing copy, and duplicated repo facts.
 - Do not create extra README-style companion files unless the user asked or the repo clearly needs them.
 
@@ -51,13 +57,17 @@ When finishing documentation work, report:
 
 - Files changed or created.
 - Audience and purpose.
+- Canonical source updated or established.
 - Any claims verified.
 - Any claims intentionally left unverified.
+- Links, paths, and command snippets checked, including anything deliberately not executed.
 - Inline comments added, changed, or removed and why.
 
 ## Anti-Patterns
 
 - Creating new docs when an existing doc should be updated.
+- Copying the same operational fact into multiple canonical-looking documents.
 - Adding comments to make code look documented.
 - Documenting aspirational behavior as current behavior.
+- Publishing command examples that were neither run nor labeled as unverified.
 - Letting docs drift from commands, code, or tests.

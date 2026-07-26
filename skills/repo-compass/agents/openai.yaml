@@ -1,4 +1,4 @@
 interface:
   display_name: "Repo Compass"
-  short_description: "Map a repo into a concise working runbook."
-  default_prompt: "Use repo-compass to map this repo and identify how to work safely."
+  short_description: "Map a repo into an evidence-backed working runbook."
+  default_prompt: "Use $repo-compass to map this repository and identify how to work in it safely."

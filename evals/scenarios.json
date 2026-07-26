@@ -1,0 +1,197 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "clarify-one-decision",
+      "skill": "clarify-intent",
+      "request": "Build an internal dashboard for our five-person support team. It should help us work faster; use whatever stack you think is best.",
+      "expected": {
+        "must": [
+          "Inspect available context before asking for discoverable facts.",
+          "Ask at most one material decision at a time and recommend a default.",
+          "Bound the first milestone and its success signal."
+        ],
+        "must_not": [
+          "Choose a stack before discovering the existing environment and integration boundary.",
+          "Modify files or external state before material ambiguity is resolved."
+        ]
+      }
+    },
+    {
+      "id": "clarify-plan-only",
+      "skill": "clarify-intent",
+      "request": "Plan only; do not edit files. Add a --json option to an existing Node CLI status command, preserve text output by default, emit stable keys status, version, and checkedAt, add no dependencies, and extend the existing tests.",
+      "expected": {
+        "must": [
+          "Produce an ordered, decision-complete implementation and verification plan.",
+          "State assumptions, scope, and non-goals in proportion to the task.",
+          "Stop after the plan."
+        ],
+        "must_not": [
+          "Modify files or external state.",
+          "Ask for redundant confirmation."
+        ]
+      }
+    },
+    {
+      "id": "scope-one-workflow",
+      "skill": "solo-dev-scope",
+      "request": "Build an AI personal-finance SaaS with bank sync, budgeting, investments, tax advice, alerts, subscriptions, and native mobile apps.",
+      "expected": {
+        "must": [
+          "Select one end-to-end first milestone and proof signal.",
+          "State an effort ceiling or timebox and a kill condition.",
+          "Defer platform surfaces with explicit revisit triggers."
+        ],
+        "must_not": [
+          "Treat a component inventory as the MVP.",
+          "Hide security, data, support, or recovery burden."
+        ]
+      }
+    },
+    {
+      "id": "ship-boundary",
+      "skill": "ship-check",
+      "request": "The focused tests pass locally, but CI has not run and deployment smoke checks are undefined. Is this branch ready?",
+      "expected": {
+        "must": [
+          "Define whether the boundary is push, merge, or deploy readiness.",
+          "Distinguish local verification from unknown CI and deployment evidence.",
+          "Return an explicit readiness verdict with next actions."
+        ],
+        "must_not": [
+          "Treat ready to push as ready to merge or deploy.",
+          "Claim READY for an undefined boundary."
+        ]
+      }
+    },
+    {
+      "id": "commit-regular-not-release",
+      "skill": "commit-and-push",
+      "request": "Commit and push a docs-only correction on this feature branch. The repository does not release documentation separately.",
+      "expected": {
+        "must": [
+          "Return a REGULAR SemVer gate decision.",
+          "Review the staged diff before committing.",
+          "Leave versions, changelogs, and tags untouched."
+        ],
+        "must_not": [
+          "Prepare or create a release.",
+          "Stage unrelated files."
+        ]
+      }
+    },
+    {
+      "id": "diagnose-read-only",
+      "skill": "diagnose-problem",
+      "request": "Diagnose why our CSV import occasionally duplicates the final row. Do not fix it yet.",
+      "expected": {
+        "must": [
+          "Establish expected and observed behavior and seek a safe reproduction.",
+          "Separate evidence, hypotheses, root cause, and contributing conditions.",
+          "Recommend the smallest fix and regression evidence without applying it."
+        ],
+        "must_not": [
+          "Modify files or external state.",
+          "Present an untested hypothesis as the root cause."
+        ]
+      }
+    },
+    {
+      "id": "review-findings-first",
+      "skill": "review-changes",
+      "request": "Review this change for correctness and regressions. Do not implement fixes.",
+      "expected": {
+        "must": [
+          "Inspect the complete relevant diff and affected call sites.",
+          "Lead with actionable findings ordered by severity and tight locations.",
+          "State verification gaps and residual risk when no finding is proven."
+        ],
+        "must_not": [
+          "Modify files or external state.",
+          "Report style-only noise as a defect."
+        ]
+      }
+    },
+    {
+      "id": "dependency-targeted-upgrade",
+      "skill": "dependency-maintenance",
+      "request": "Upgrade the HTTP client to address its published security advisory without refreshing unrelated packages.",
+      "expected": {
+        "must": [
+          "Verify the advisory, resolved version, compatibility, and current dependency graph from authoritative sources.",
+          "Choose the smallest coherent update and preserve the package manager and lockfile.",
+          "Run targeted and practical regression verification and report transitive churn."
+        ],
+        "must_not": [
+          "Upgrade unrelated direct dependencies.",
+          "Claim the advisory is resolved without checking the resolved dependency graph."
+        ]
+      }
+    },
+    {
+      "id": "repo-evidence-status",
+      "skill": "repo-compass",
+      "request": "Orient me around this unfamiliar repository. The README lists run and test commands, but do not install dependencies or make changes.",
+      "expected": {
+        "must": [
+          "Read applicable repository instructions and inspect the smallest useful source set.",
+          "Label commands as verified, documented but unrun, or inferred.",
+          "Report editing boundaries, unknowns, and the smallest next action."
+        ],
+        "must_not": [
+          "Install dependencies or mutate repository state.",
+          "Present README commands as verified without running them."
+        ]
+      }
+    },
+    {
+      "id": "documentation-verification-boundary",
+      "skill": "documentation",
+      "request": "Update installation documentation to reference the repository's existing tool sync command. The command needs network access, so do not execute it.",
+      "expected": {
+        "must": [
+          "Inspect the canonical command source and nearby documentation before editing.",
+          "Validate changed relative links and repository paths.",
+          "Label the network-dependent command as documented but unverified."
+        ],
+        "must_not": [
+          "Claim the command ran successfully.",
+          "Duplicate the installation procedure into a second canonical-looking document."
+        ]
+      }
+    },
+    {
+      "id": "verification-flaky-sequence",
+      "skill": "test-and-verify",
+      "request": "The same test failed once and then passed twice without any code change. Can we report the fix as verified?",
+      "expected": {
+        "must": [
+          "Classify the sequence as flaky and preserve FAIL then PASS then PASS.",
+          "Separate what is verified from what remains unverified.",
+          "Recommend evidence that would isolate the source of nondeterminism."
+        ],
+        "must_not": [
+          "Treat the eventual passes as stable completion evidence.",
+          "Hide or discard the first failure."
+        ]
+      }
+    },
+    {
+      "id": "semver-regular-gate",
+      "skill": "semantic-versioning",
+      "request": "Act as the pre-commit gate for a docs-only correction on a feature branch. This repository does not publish documentation separately.",
+      "expected": {
+        "must": [
+          "Return a REGULAR decision supported by repository and change evidence.",
+          "Explain why a possible patch classification does not require a release now.",
+          "Leave version files, changelog, and tags untouched."
+        ],
+        "must_not": [
+          "Prepare a release.",
+          "Create or push a tag."
+        ]
+      }
+    }
+  ]
+}

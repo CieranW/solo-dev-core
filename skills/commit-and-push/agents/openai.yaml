@@ -1,4 +1,4 @@
 interface:
   display_name: "Commit And Push"
-  short_description: "Commit and push safely with SemVer-aware release routing."
-  default_prompt: "Use $commit-and-push to review, version when release intent requires it, commit, and push the current changes."
+  short_description: "Assess SemVer, then commit and push safely."
+  default_prompt: "Use $commit-and-push to run the SemVer gate, prepare the right commit, and push the current changes."

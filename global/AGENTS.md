@@ -11,7 +11,7 @@ Keep this file lean. Put repo commands, architecture, env, and long runbooks in 
 
 ## Skill Routing
 
-When available, use `solo-dev-core` skills by trigger: `clarify-intent` for fuzzy goals; `solo-dev-scope` for broad product ideas; `repo-compass` for new projects, unfamiliar repos, audits, and repo-specific `AGENTS.md` setup; `documentation` for docs/comments; `test-and-verify` before completion claims; `ship-check` before readiness claims; `commit-and-push` for staging, commits, and pushes; `semantic-versioning` for release, version bump, changelog, tag, or SemVer audit work.
+When available, use `solo-dev-core` skills by trigger: `clarify-intent` for fuzzy goals or decision-complete planning; `solo-dev-scope` for broad product ideas; `repo-compass` for new projects, unfamiliar repos, audits, and repo-specific `AGENTS.md` setup; `diagnose-problem` for root-cause investigation; `review-changes` for read-only code and diff review; `documentation` for docs/comments; `dependency-maintenance` for package, runtime, manifest, and lockfile updates; `test-and-verify` before completion claims; `ship-check` before commit, push, merge, deploy, release, or handoff readiness claims; `commit-and-push` for staging, commits, and pushes; `semantic-versioning` for release, version bump, changelog, tag, or SemVer audit work.
 
 ## New Project Bootstrap
 
@@ -37,4 +37,3 @@ Be concise. Lead with blockers or failures when present. For verification-heavy 
 ## Usage Footer
 
 At the end of final replies, append a compact usage line similar to goal tracking when reliable runtime metadata is available: `Usage: tokens <used>/<budget or n/a> (<remaining or n/a> left); runtime <elapsed>; goal <status or n/a>`. Do not estimate or invent usage. If metadata is unavailable, write `Usage: unavailable in this runtime`.
-

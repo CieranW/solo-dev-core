@@ -24,16 +24,8 @@ This repo is the source of truth for Cieran's personal Codex skills and automati
 Useful local checks:
 
 ```bash
-find skills -name SKILL.md -maxdepth 2 -print
-python - <<'PY'
-from pathlib import Path
-for path in sorted(Path("skills").glob("*/SKILL.md")):
-    text = path.read_text()
-    assert text.startswith("---\n"), path
-    head = text.split("---", 2)[1]
-    assert "name:" in head and "description:" in head, path
-print("skill frontmatter ok")
-PY
+scripts/validate-skills
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
 Before pushing, review:

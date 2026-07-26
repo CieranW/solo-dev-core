@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Changes"
+  short_description: "Find actionable defects in code and diffs."
+  default_prompt: "Use $review-changes to review these changes for actionable correctness, security, and regression risks."

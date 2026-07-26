@@ -1,4 +1,4 @@
 interface:
-  display_name: "Clarify Intent"
-  short_description: "Resolve goal, scope, and success criteria before action."
-  default_prompt: "Use clarify-intent to turn this request into a clear task before implementing."
+  display_name: "Clarify And Plan"
+  short_description: "Resolve intent and produce a decision-complete plan."
+  default_prompt: "Use $clarify-intent to clarify this request and produce the smallest decision-complete plan."

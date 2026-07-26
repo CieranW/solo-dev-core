@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dependency Maintenance"
+  short_description: "Upgrade dependencies with compatibility evidence."
+  default_prompt: "Use $dependency-maintenance to plan or apply the smallest safe dependency update for this repository."

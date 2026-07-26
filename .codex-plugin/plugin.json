@@ -1,6 +1,6 @@
 {
   "name": "solo-dev-core",
   "version": "1.0.0+codex.20260630000453",
-  "description": "Private solo-developer guardrail skills for scoping, documentation, verification, shipping, Git commits, and semantic versioning.",
+  "description": "Private solo-developer workflow skills for planning, scoping, diagnosis, review, documentation, dependency maintenance, verification, shipping, Git, and semantic versioning.",
   "skills": "./skills/"
 }
