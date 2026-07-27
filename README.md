@@ -82,15 +82,16 @@ Skip any step whose trigger is not present.
 
 ## Global instructions across repositories
 
-`global/AGENTS.md` is the canonical portable global instruction file. On another machine, inspect any existing global instructions before replacing them:
+`global/AGENTS.md` is the canonical portable global instruction file. The
+installer below links it safely and stops on an existing unrelated file. To
+compare manually:
 
 ```bash
 diff -u ~/.codex/AGENTS.md global/AGENTS.md
-mkdir -p ~/.codex
-cp global/AGENTS.md ~/.codex/AGENTS.md
 ```
 
-The copy is deliberate and is not performed by repository validation. Repository-specific commands, architecture, environment setup, and deployment facts must remain in that repository's `AGENTS.md`.
+Repository-specific commands, architecture, environment setup, and deployment
+facts must remain in that repository's `AGENTS.md`.
 
 ## Project memory contracts
 
@@ -147,6 +148,44 @@ The report includes every registered project, tolerates unmapped or missing
 clones, and flags stale records, missing milestones, dirty trees, locally ahead
 branches, and date-based Future Idea trigger candidates. Git inspection is
 optional and never fetches, so ahead counts reflect only local upstream refs.
+
+## Cross-machine installation
+
+Clone this repository on each macOS or Linux machine, inspect the checkout, and
+run the idempotent installer:
+
+```bash
+git clone git@github.com:CieranW/solo-dev-core.git
+cd solo-dev-core
+scripts/install --dry-run
+scripts/install
+scripts/install --check
+```
+
+The installer creates canonical skill links under `~/.agents/skills` and links
+`global/AGENTS.md` to `~/.codex/AGENTS.md`. It preflights every destination,
+stops before making changes when a file, directory, or unrelated symlink
+conflicts, and never overwrites regular user configuration. Use
+`--replace-links` only to refresh existing symlinks after deliberately moving
+the canonical checkout. Custom destinations are available through
+`--skills-dir` and `--global-file`.
+
+Update a machine with:
+
+```bash
+git -C /path/to/solo-dev-core pull --ff-only
+/path/to/solo-dev-core/scripts/install
+```
+
+Existing links immediately see edits to known skills; rerun the installer after
+pulling so newly added skills are linked and the installation is validated.
+Machine-local registry paths remain ignored and must be configured separately
+on each machine.
+
+Native Windows installation is not supported initially. Use WSL with the
+repository and Codex configuration inside the Linux filesystem. Native Windows
+support would need a separate junction/symlink and profile-path implementation;
+the installer exits without changes on unsupported operating systems.
 
 ## Plugin installation and refresh
 
