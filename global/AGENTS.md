@@ -11,7 +11,7 @@ Keep this file lean. Put repo commands, architecture, env, and long runbooks in 
 
 ## Skill Routing
 
-When available, use `solo-dev-core` skills by trigger: `clarify-intent` for fuzzy goals or decision-complete planning; `solo-dev-scope` for broad product ideas; `repo-compass` for new projects, unfamiliar repos, audits, and repo-specific `AGENTS.md` setup; `diagnose-problem` for root-cause investigation; `review-changes` for read-only code and diff review; `documentation` for docs/comments; `dependency-maintenance` for package, runtime, manifest, and lockfile updates; `test-and-verify` before completion claims; `ship-check` before commit, push, merge, deploy, release, or handoff readiness claims; `commit-and-push` for staging, commits, and pushes; `semantic-versioning` for release, version bump, changelog, tag, or SemVer audit work.
+When available, use `solo-dev-core` skills by trigger: `clarify-intent` for fuzzy goals or decision-complete planning; `solo-dev-scope` for broad product ideas; `repo-compass` for new projects, unfamiliar repos, fresh-chat context recovery, handoffs, audits, and repo-specific `AGENTS.md` setup; `diagnose-problem` for root-cause investigation; `review-changes` for read-only code and diff review; `documentation` for docs/comments; `dependency-maintenance` for package, runtime, manifest, and lockfile updates; `test-and-verify` before completion claims; `ship-check` before commit, push, merge, deploy, release, or handoff readiness claims; `commit-and-push` for staging, commits, and pushes; `semantic-versioning` for release, version bump, changelog, tag, or SemVer audit work.
 
 ## New Project Bootstrap
 

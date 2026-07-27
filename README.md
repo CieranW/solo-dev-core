@@ -10,7 +10,7 @@ The tracked global Codex instruction source lives at `global/AGENTS.md`. The rep
 
 - `clarify-intent`: resolve material ambiguity and produce decision-complete plans.
 - `solo-dev-scope`: shrink broad product ideas to one testable first milestone.
-- `repo-compass`: map unfamiliar repos into evidence-backed working runbooks.
+- `repo-compass`: orient in unfamiliar repos or resume work with compact evidence-backed briefs.
 - `diagnose-problem`: reproduce unexpected behavior and isolate evidence-backed root causes.
 - `review-changes`: find actionable correctness, security, and regression defects in diffs.
 - `documentation`: maintain canonical Markdown docs and useful inline comments.

@@ -135,6 +135,7 @@
       "request": "Orient me around this unfamiliar repository. The README lists run and test commands, but do not install dependencies or make changes.",
       "expected": {
         "must": [
+          "Infer ORIENT mode without asking the user to choose.",
           "Read applicable repository instructions and inspect the smallest useful source set.",
           "Label commands as verified, documented but unrun, or inferred.",
           "Report editing boundaries, unknowns, and the smallest next action."
@@ -142,6 +143,23 @@
         "must_not": [
           "Install dependencies or mutate repository state.",
           "Present README commands as verified without running them."
+        ]
+      }
+    },
+    {
+      "id": "repo-resume-session",
+      "skill": "repo-compass",
+      "request": "I am starting a fresh chat in a repository I have been working on. Use local history and any existing plan or handoff records to get up to speed, then prepare to help me finish the current CLI migration. Keep orientation read-only, do not fetch, and do not rerun the full test suite.",
+      "expected": {
+        "must": [
+          "Infer RESUME mode without asking the user to choose.",
+          "Read applicable repository instructions, inspect branch and worktree state, and use bounded recent history, relevant diffs, and continuity records.",
+          "Distinguish local tracking information, documented claims, inferred context, and freshly verified evidence.",
+          "Produce a compact session brief with the current objective, relevant changes, risks or unknowns, and the exact next action."
+        ],
+        "must_not": [
+          "Fetch, install dependencies, run the full test suite, or mutate repository state.",
+          "Reread the entire repository or treat stale plans and documentation as authoritative without reconciliation."
         ]
       }
     },
