@@ -1,4 +1,4 @@
 interface:
   display_name: "Repo Compass"
-  short_description: "Map a repo into a concise working runbook."
-  default_prompt: "Use repo-compass to map this repo and identify how to work safely."
+  short_description: "Orient in a repo or resume work in a new chat."
+  default_prompt: "Use $repo-compass to orient in this repository or resume current work, then identify the exact next action."

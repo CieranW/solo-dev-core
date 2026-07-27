@@ -1,4 +1,4 @@
 interface:
   display_name: "Solo Dev Scope"
-  short_description: "Shrink broad ideas into maintainable first milestones."
-  default_prompt: "Use solo-dev-scope to define the smallest useful version of this idea."
+  short_description: "Reduce broad ideas to one testable first milestone."
+  default_prompt: "Use $solo-dev-scope to define the smallest testable first milestone for this idea."

@@ -1,0 +1,714 @@
+#!/usr/bin/env python3
+"""Validate solo-dev-core skill contracts without third-party packages."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from itertools import combinations
+from pathlib import Path
+
+
+NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+FRONTMATTER_RE = re.compile(r"\A---\n(?P<frontmatter>.*?)\n---(?:\n|\Z)", re.DOTALL)
+SKILL_REFERENCE_RE = re.compile(r"(?<!\\)\$([a-z0-9][a-z0-9-]*)")
+WORD_RE = re.compile(r"[a-z0-9]+")
+YAML_NUMBER_RE = re.compile(
+    r"[-+]?(?:0|[1-9][0-9_]*)(?:\.[0-9_]*)?(?:[eE][-+]?[0-9]+)?"
+)
+YAML_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}(?:[Tt ].*)?")
+YAML_NON_STRING_LITERALS = {
+    "~",
+    "false",
+    "no",
+    "null",
+    "off",
+    "on",
+    "true",
+    "yes",
+    ".inf",
+    "+.inf",
+    "-.inf",
+    ".nan",
+}
+STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "any",
+    "as",
+    "at",
+    "be",
+    "before",
+    "by",
+    "for",
+    "from",
+    "in",
+    "including",
+    "into",
+    "is",
+    "it",
+    "of",
+    "on",
+    "or",
+    "that",
+    "the",
+    "their",
+    "then",
+    "this",
+    "to",
+    "use",
+    "user",
+    "when",
+    "with",
+    "work",
+}
+REQUIRED_SKILL_SECTIONS = {
+    "## Boundaries",
+    "## Workflow",
+    "## Evidence",
+    "## Output Contract",
+    "## Stop Conditions",
+    "## Composition",
+}
+MUTATION_POLICIES = {"read-only", "may-mutate", "must-mutate"}
+RETIRED_LEADERSHIP_SKILLS = {"engineering-director", "lead-engineer"}
+ENGINEERING_DIRECTOR_IDENTITY = "Codex is always the Engineering Director"
+
+
+def parse_scalar(
+    raw_value: str,
+    path: Path,
+    line_number: int,
+    errors: list[str],
+    *,
+    require_quotes: bool = False,
+) -> str | None:
+    value = raw_value.strip()
+    if not value:
+        errors.append(f"{path}:{line_number}: empty scalar value")
+        return None
+
+    if value.startswith('"'):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError as exc:
+            errors.append(f"{path}:{line_number}: invalid quoted string: {exc.msg}")
+            return None
+        if not isinstance(parsed, str):
+            errors.append(f"{path}:{line_number}: expected a string scalar")
+            return None
+        return parsed
+
+    if value.startswith("'"):
+        if len(value) < 2 or not value.endswith("'"):
+            errors.append(f"{path}:{line_number}: unterminated single-quoted string")
+            return None
+        inner = value[1:-1]
+        parsed_characters: list[str] = []
+        index = 0
+        while index < len(inner):
+            character = inner[index]
+            if character != "'":
+                parsed_characters.append(character)
+                index += 1
+                continue
+            if index + 1 < len(inner) and inner[index + 1] == "'":
+                parsed_characters.append("'")
+                index += 2
+                continue
+            errors.append(
+                f"{path}:{line_number}: single quotes inside a YAML string "
+                "must be escaped as two single quotes"
+            )
+            return None
+        return "".join(parsed_characters)
+
+    if require_quotes:
+        errors.append(f"{path}:{line_number}: UI string values must be quoted")
+        return None
+
+    if value[0] in "[{|>&*!,]}%@`":
+        errors.append(
+            f"{path}:{line_number}: use a single-line string scalar for skill metadata"
+        )
+        return None
+    if (
+        ": " in value
+        or value.startswith(("#", "- ", "? "))
+        or " #" in value
+    ):
+        errors.append(
+            f"{path}:{line_number}: unsupported YAML plain-scalar syntax; "
+            "quote the complete string"
+        )
+        return None
+    if (
+        value.casefold() in YAML_NON_STRING_LITERALS
+        or YAML_NUMBER_RE.fullmatch(value)
+        or YAML_DATE_RE.fullmatch(value)
+    ):
+        errors.append(
+            f"{path}:{line_number}: ambiguous YAML non-string scalar; "
+            "quote the value to make it a string"
+        )
+        return None
+    return value
+
+
+def parse_skill_frontmatter(path: Path, errors: list[str]) -> dict[str, str]:
+    try:
+        content = path.read_text()
+    except OSError as exc:
+        errors.append(f"{path}: cannot read file: {exc}")
+        return {}
+
+    match = FRONTMATTER_RE.match(content)
+    if not match:
+        errors.append(f"{path}: invalid or missing YAML frontmatter")
+        return {}
+
+    values: dict[str, str] = {}
+    allowed = {"name", "description"}
+    for line_number, line in enumerate(
+        match.group("frontmatter").splitlines(), start=2
+    ):
+        if not line.strip():
+            continue
+        if line.startswith((" ", "\t")) or ":" not in line:
+            errors.append(
+                f"{path}:{line_number}: frontmatter must use single-line top-level keys"
+            )
+            continue
+        key, raw_value = line.split(":", 1)
+        if key not in allowed:
+            errors.append(f"{path}:{line_number}: unexpected frontmatter key '{key}'")
+            continue
+        if key in values:
+            errors.append(f"{path}:{line_number}: duplicate frontmatter key '{key}'")
+            continue
+        parsed = parse_scalar(raw_value, path, line_number, errors)
+        if parsed is not None:
+            values[key] = parsed
+
+    missing = allowed - values.keys()
+    if missing:
+        errors.append(f"{path}: missing frontmatter keys: {', '.join(sorted(missing))}")
+    return values
+
+
+def markdown_h2_sections(content: str) -> dict[str, list[str]]:
+    sections: dict[str, list[list[str]]] = {}
+    current_heading: str | None = None
+    fence: str | None = None
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("```", "~~~")):
+            marker = stripped[:3]
+            if fence is None:
+                fence = marker
+            elif fence == marker:
+                fence = None
+            continue
+        if fence is None and line.startswith("## "):
+            current_heading = line.strip()
+            sections.setdefault(current_heading, []).append([])
+            continue
+        if current_heading is not None:
+            sections[current_heading][-1].append(line)
+    return {
+        heading: ["\n".join(lines).strip() for lines in bodies]
+        for heading, bodies in sections.items()
+    }
+
+
+def validate_skill_body(path: Path, errors: list[str]) -> None:
+    try:
+        content = path.read_text()
+    except OSError as exc:
+        errors.append(f"{path}: cannot read file: {exc}")
+        return
+    if "[TODO:" in content:
+        errors.append(f"{path}: contains an unresolved TODO placeholder")
+    sections = markdown_h2_sections(content)
+    missing = sorted(REQUIRED_SKILL_SECTIONS - sections.keys())
+    if missing:
+        errors.append(f"{path}: missing required sections: {', '.join(missing)}")
+    for heading in sorted(REQUIRED_SKILL_SECTIONS & sections.keys()):
+        bodies = sections[heading]
+        if len(bodies) > 1:
+            errors.append(f"{path}: duplicate required section: {heading}")
+        if not bodies[0]:
+            errors.append(f"{path}: empty required section: {heading}")
+
+
+def validate_skill(
+    skill_dir: Path, errors: list[str]
+) -> tuple[str | None, str | None]:
+    skill_path = skill_dir / "SKILL.md"
+    if not skill_path.is_file():
+        errors.append(f"{skill_dir}: missing SKILL.md")
+        return None, None
+
+    validate_skill_body(skill_path, errors)
+    frontmatter = parse_skill_frontmatter(skill_path, errors)
+    name = frontmatter.get("name")
+    description = frontmatter.get("description")
+    if name is not None:
+        if not NAME_RE.fullmatch(name) or len(name) > 64:
+            errors.append(f"{skill_path}: invalid skill name '{name}'")
+        if name != skill_dir.name:
+            errors.append(
+                f"{skill_path}: name '{name}' does not match folder '{skill_dir.name}'"
+            )
+    if description is not None:
+        if not description.strip():
+            errors.append(f"{skill_path}: description must not be empty")
+        if len(description) > 1024:
+            errors.append(f"{skill_path}: description exceeds 1024 characters")
+        if "<" in description or ">" in description:
+            errors.append(f"{skill_path}: description cannot contain angle brackets")
+
+    validate_ui_metadata(skill_dir, name or skill_dir.name, errors)
+    return name, description
+
+
+def validate_ui_metadata(skill_dir: Path, skill_name: str, errors: list[str]) -> None:
+    path = skill_dir / "agents" / "openai.yaml"
+    if not path.is_file():
+        errors.append(f"{skill_dir}: missing agents/openai.yaml")
+        return
+
+    values: dict[str, str] = {}
+    in_interface = False
+    try:
+        lines = path.read_text().splitlines()
+    except OSError as exc:
+        errors.append(f"{path}: cannot read UI metadata: {exc}")
+        return
+    for line_number, line in enumerate(lines, start=1):
+        if line == "interface:":
+            in_interface = True
+            continue
+        if not in_interface:
+            continue
+        if line and not line.startswith((" ", "\t")):
+            break
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        match = re.fullmatch(r"  ([a-z_]+):\s*(.+)", line)
+        if not match:
+            errors.append(
+                f"{path}:{line_number}: malformed interface field or indentation"
+            )
+            continue
+        key, raw_value = match.groups()
+        if key in values:
+            errors.append(f"{path}:{line_number}: duplicate interface field '{key}'")
+            continue
+        parsed = parse_scalar(
+            raw_value, path, line_number, errors, require_quotes=True
+        )
+        if parsed is not None:
+            values[key] = parsed
+
+    required = {"display_name", "short_description", "default_prompt"}
+    missing = required - values.keys()
+    if missing:
+        errors.append(f"{path}: missing interface fields: {', '.join(sorted(missing))}")
+        return
+
+    short_description = values["short_description"]
+    if not 25 <= len(short_description) <= 64:
+        errors.append(
+            f"{path}: short_description must contain 25-64 characters "
+            f"(found {len(short_description)})"
+        )
+    if f"${skill_name}" not in values["default_prompt"]:
+        errors.append(f"{path}: default_prompt must mention ${skill_name}")
+
+
+def validate_manifest(root: Path, errors: list[str]) -> None:
+    path = root / ".codex-plugin" / "plugin.json"
+    try:
+        manifest = json.loads(path.read_text())
+    except FileNotFoundError:
+        errors.append(f"{path}: missing plugin manifest")
+        return
+    except (OSError, json.JSONDecodeError) as exc:
+        errors.append(f"{path}: invalid plugin manifest: {exc}")
+        return
+    if not isinstance(manifest, dict):
+        errors.append(f"{path}: plugin manifest must be a JSON object")
+        return
+    if manifest.get("skills") != "./skills/":
+        errors.append(f"{path}: skills must point to './skills/'")
+
+
+def validate_readme(root: Path, skill_names: set[str], errors: list[str]) -> None:
+    path = root / "README.md"
+    try:
+        content = path.read_text()
+    except OSError as exc:
+        errors.append(f"{path}: cannot read README: {exc}")
+        return
+    match = re.search(r"^## Skills\n(?P<body>.*?)(?=^## |\Z)", content, re.MULTILINE | re.DOTALL)
+    if not match:
+        errors.append(f"{path}: missing '## Skills' section")
+        return
+    listed: list[str] = []
+    for line in match.group("body").splitlines():
+        bullet = re.match(
+            r"^\s*[-*+]\s+`([a-z0-9]+(?:-[a-z0-9]+)*)`(?:\s|:|$)",
+            line,
+        )
+        table = re.match(
+            r"^\s*\|[^|]*\|\s*`([a-z0-9]+(?:-[a-z0-9]+)*)`\s*\|",
+            line,
+        )
+        if bullet:
+            listed.append(bullet.group(1))
+        elif table:
+            listed.append(table.group(1))
+    duplicates = sorted({name for name in listed if listed.count(name) > 1})
+    if duplicates:
+        errors.append(f"{path}: duplicate skill entries: {', '.join(duplicates)}")
+    listed_set = set(listed)
+    missing = sorted(skill_names - listed_set)
+    unknown = sorted(listed_set - skill_names)
+    if missing:
+        errors.append(f"{path}: missing skill entries: {', '.join(missing)}")
+    if unknown:
+        errors.append(f"{path}: unknown skill entries: {', '.join(unknown)}")
+
+
+def validate_cross_references(
+    skill_dirs: list[Path], skill_names: set[str], errors: list[str]
+) -> None:
+    for skill_dir in skill_dirs:
+        for path in (skill_dir / "SKILL.md", skill_dir / "agents" / "openai.yaml"):
+            if not path.is_file():
+                continue
+            for reference in sorted(set(SKILL_REFERENCE_RE.findall(path.read_text()))):
+                if reference not in skill_names:
+                    errors.append(f"{path}: references missing skill ${reference}")
+
+
+def description_tokens(description: str) -> set[str]:
+    return {
+        token
+        for token in WORD_RE.findall(description.lower())
+        if token not in STOPWORDS and len(token) > 1
+    }
+
+
+def find_description_overlaps(
+    descriptions: dict[str, str], threshold: float
+) -> list[str]:
+    warnings: list[str] = []
+    for (left_name, left_description), (right_name, right_description) in combinations(
+        sorted(descriptions.items()), 2
+    ):
+        left = description_tokens(left_description)
+        right = description_tokens(right_description)
+        if not left or not right:
+            continue
+        score = len(left & right) / len(left | right)
+        if score >= threshold:
+            warnings.append(
+                f"description overlap {score:.2f}: {left_name} and {right_name}"
+            )
+    return warnings
+
+
+def validate_evals(
+    root: Path, skill_names: set[str], errors: list[str]
+) -> tuple[int, set[str]]:
+    path = root / "evals" / "scenarios.json"
+    try:
+        data = json.loads(path.read_text())
+    except FileNotFoundError:
+        errors.append(f"{path}: missing eval scenario definitions")
+        return 0, set()
+    except (OSError, json.JSONDecodeError) as exc:
+        errors.append(f"{path}: invalid eval scenario definitions: {exc}")
+        return 0, set()
+
+    if not isinstance(data, dict) or data.get("version") != 2:
+        errors.append(f"{path}: top-level version must be 2")
+        return 0, set()
+    unknown_top_level = sorted(set(data) - {"version", "scenarios"})
+    if unknown_top_level:
+        errors.append(
+            f"{path}: unknown top-level fields: {', '.join(unknown_top_level)}"
+        )
+    scenarios = data.get("scenarios")
+    if not isinstance(scenarios, list):
+        errors.append(f"{path}: scenarios must be a list")
+        return 0, set()
+
+    seen_ids: set[str] = set()
+    covered_skills: set[str] = set()
+    for index, scenario in enumerate(scenarios):
+        location = f"{path}:scenario[{index}]"
+        if not isinstance(scenario, dict):
+            errors.append(f"{location}: scenario must be an object")
+            continue
+        unknown_scenario_fields = sorted(
+            set(scenario) - {"id", "request", "expected"}
+        )
+        if unknown_scenario_fields:
+            errors.append(
+                f"{location}: unknown scenario fields: "
+                + ", ".join(unknown_scenario_fields)
+            )
+        scenario_id = scenario.get("id")
+        request = scenario.get("request")
+        expected = scenario.get("expected")
+        if not isinstance(scenario_id, str) or not NAME_RE.fullmatch(scenario_id):
+            errors.append(f"{location}: id must be unique hyphen-case")
+        elif scenario_id in seen_ids:
+            errors.append(f"{location}: duplicate id '{scenario_id}'")
+        else:
+            seen_ids.add(scenario_id)
+        if not isinstance(request, str) or not request.strip():
+            errors.append(f"{location}: request must be a non-empty string")
+        if not isinstance(expected, dict):
+            errors.append(f"{location}: expected must be an object")
+            continue
+        unknown_expected_fields = sorted(
+            set(expected)
+            - {
+                "skills",
+                "must_not_select",
+                "mutation",
+                "output",
+                "failure_indicators",
+            }
+        )
+        if unknown_expected_fields:
+            errors.append(
+                f"{location}: unknown expected fields: "
+                + ", ".join(unknown_expected_fields)
+            )
+
+        selected = expected.get("skills")
+        if not isinstance(selected, list):
+            errors.append(
+                f"{location}: expected.skills must be an ordered list"
+            )
+            selected_names: list[str] = []
+        elif not all(isinstance(skill, str) for skill in selected):
+            errors.append(f"{location}: expected.skills entries must be strings")
+            selected_names = []
+        else:
+            selected_names = selected
+            if (
+                not selected_names
+                and (
+                    not isinstance(scenario_id, str)
+                    or not scenario_id.startswith("engineering-director-")
+                )
+            ):
+                errors.append(
+                    f"{location}: expected.skills may be empty only for an "
+                    "engineering-director-* root-contract scenario"
+                )
+            duplicates = sorted(
+                {skill for skill in selected_names if selected_names.count(skill) > 1}
+            )
+            if duplicates:
+                errors.append(
+                    f"{location}: expected.skills contains duplicates: "
+                    + ", ".join(duplicates)
+                )
+            unknown = sorted(set(selected_names) - skill_names)
+            if unknown:
+                errors.append(
+                    f"{location}: expected.skills names unknown skills: "
+                    + ", ".join(unknown)
+                )
+            covered_skills.update(set(selected_names) & skill_names)
+
+        forbidden = expected.get("must_not_select")
+        if not isinstance(forbidden, list) or not forbidden:
+            errors.append(
+                f"{location}: expected.must_not_select must be a non-empty list"
+            )
+            forbidden_names: list[str] = []
+        elif not all(isinstance(skill, str) for skill in forbidden):
+            errors.append(
+                f"{location}: expected.must_not_select entries must be strings"
+            )
+            forbidden_names = []
+        else:
+            forbidden_names = forbidden
+            duplicates = sorted(
+                {
+                    skill
+                    for skill in forbidden_names
+                    if forbidden_names.count(skill) > 1
+                }
+            )
+            if duplicates:
+                errors.append(
+                    f"{location}: expected.must_not_select contains duplicates: "
+                    + ", ".join(duplicates)
+                )
+            unknown = sorted(set(forbidden_names) - skill_names)
+            if unknown:
+                errors.append(
+                    f"{location}: expected.must_not_select names unknown skills: "
+                    + ", ".join(unknown)
+                )
+            overlap = sorted(set(selected_names) & set(forbidden_names))
+            if overlap:
+                errors.append(
+                    f"{location}: skills cannot be both selected and forbidden: "
+                    + ", ".join(overlap)
+                )
+
+        mutation = expected.get("mutation")
+        if mutation not in MUTATION_POLICIES:
+            errors.append(
+                f"{location}: expected.mutation must be one of "
+                + ", ".join(sorted(MUTATION_POLICIES))
+            )
+
+        for key in ("output", "failure_indicators"):
+            rules = expected.get(key)
+            if not isinstance(rules, list) or not all(
+                isinstance(rule, str) and rule.strip() for rule in rules
+            ):
+                errors.append(
+                    f"{location}: expected.{key} must be a list of non-empty strings"
+                )
+            elif not rules:
+                errors.append(
+                    f"{location}: expected.{key} must contain at least one rule"
+                )
+    return len(scenarios), covered_skills
+
+
+def validate_operating_contract(
+    root: Path, skill_dirs: list[Path], errors: list[str]
+) -> None:
+    for relative_path in ("AGENTS.md", "global/AGENTS.md"):
+        path = root / relative_path
+        try:
+            content = path.read_text()
+        except FileNotFoundError:
+            errors.append(f"{path}: missing Engineering Director instructions")
+            continue
+        except OSError as exc:
+            errors.append(f"{path}: cannot read Engineering Director instructions: {exc}")
+            continue
+        if ENGINEERING_DIRECTOR_IDENTITY not in content:
+            errors.append(
+                f"{path}: must state '{ENGINEERING_DIRECTOR_IDENTITY}'"
+            )
+
+    retired = sorted(
+        skill_dir.name
+        for skill_dir in skill_dirs
+        if skill_dir.name in RETIRED_LEADERSHIP_SKILLS
+    )
+    if retired:
+        errors.append(
+            "skills/: leadership is an always-active root identity, not a skill: "
+            + ", ".join(retired)
+        )
+
+
+def validate(root: Path, overlap_threshold: float) -> tuple[list[str], list[str], dict[str, int]]:
+    errors: list[str] = []
+    skills_root = root / "skills"
+    skill_dirs = sorted(
+        path
+        for path in skills_root.iterdir()
+        if path.is_dir() and not path.name.startswith(".")
+    ) if skills_root.is_dir() else []
+    if not skill_dirs:
+        errors.append(f"{skills_root}: no skill directories found")
+    validate_operating_contract(root, skill_dirs, errors)
+
+    descriptions: dict[str, str] = {}
+    for skill_dir in skill_dirs:
+        name, description = validate_skill(skill_dir, errors)
+        if name and description:
+            descriptions[name] = description
+
+    skill_names = set(descriptions)
+    validate_manifest(root, errors)
+    validate_readme(root, skill_names, errors)
+    validate_cross_references(skill_dirs, skill_names, errors)
+    eval_count, eval_coverage = validate_evals(root, skill_names, errors)
+    missing_eval_coverage = sorted(skill_names - eval_coverage)
+    if missing_eval_coverage:
+        errors.append(
+            "evals/scenarios.json: missing skill coverage: "
+            + ", ".join(missing_eval_coverage)
+        )
+    warnings = find_description_overlaps(descriptions, overlap_threshold)
+    stats = {
+        "skills": len(skill_dirs),
+        "evals": eval_count,
+        "eval_coverage": len(eval_coverage),
+    }
+    return errors, warnings, stats
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Validate skill contracts, metadata, routing, and eval definitions."
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=Path(__file__).resolve().parent.parent,
+        help="Repository root; defaults to the parent of scripts/.",
+    )
+    parser.add_argument(
+        "--overlap-threshold",
+        type=float,
+        default=0.45,
+        help="Jaccard threshold for description-overlap warnings.",
+    )
+    parser.add_argument(
+        "--strict-overlap",
+        action="store_true",
+        help="Treat description-overlap warnings as validation errors.",
+    )
+    args = parser.parse_args()
+    if not 0 < args.overlap_threshold <= 1:
+        parser.error("--overlap-threshold must be greater than 0 and at most 1")
+
+    root = args.root.resolve()
+    errors, warnings, stats = validate(root, args.overlap_threshold)
+    for warning in warnings:
+        print(f"[WARN] {warning}")
+    if args.strict_overlap:
+        errors.extend(warnings)
+    if errors:
+        for error in errors:
+            print(f"[ERROR] {error}", file=sys.stderr)
+        print(
+            f"skill validation failed: {len(errors)} error(s), "
+            f"{len(warnings)} warning(s)",
+            file=sys.stderr,
+        )
+        return 1
+
+    print(
+        "skill validation passed: "
+        f"{stats['skills']} skills, {stats['evals']} eval scenarios, "
+        f"{stats['eval_coverage']} skills with eval coverage, "
+        f"{len(warnings)} warning(s)"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

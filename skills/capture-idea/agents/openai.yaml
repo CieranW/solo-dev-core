@@ -1,0 +1,4 @@
+interface:
+  display_name: "Capture Idea"
+  short_description: "Record an idea without expanding active scope"
+  default_prompt: "Use $capture-idea to preserve this idea for later and resume the active task."

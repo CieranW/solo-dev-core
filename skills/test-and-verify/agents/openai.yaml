@@ -1,4 +1,4 @@
 interface:
   display_name: "Test And Verify"
-  short_description: "Require fresh evidence before completion claims."
-  default_prompt: "Use test-and-verify before reporting whether this is done."
+  short_description: "Match completion claims to fresh verification evidence."
+  default_prompt: "Use $test-and-verify to gather fresh evidence before reporting whether this work is complete."

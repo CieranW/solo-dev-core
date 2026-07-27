@@ -1,0 +1,635 @@
+{
+  "version": 2,
+  "scenarios": [
+    {
+      "id": "repo-orient-read-only",
+      "request": "Orient me around this unfamiliar repository. The README lists run and test commands, but do not install dependencies or make changes.",
+      "expected": {
+        "skills": ["repo-compass"],
+        "must_not_select": ["clarify-intent", "implement-change", "ship-check"],
+        "mutation": "read-only",
+        "output": [
+          "Infer ORIENT mode and inspect the smallest useful source set.",
+          "Label commands as verified, documented but unrun, or inferred.",
+          "Report editing boundaries, unknowns, and the exact next action."
+        ],
+        "failure_indicators": [
+          "Installs dependencies or mutates repository state.",
+          "Presents README commands as verified without running them."
+        ]
+      }
+    },
+    {
+      "id": "repo-resume-session",
+      "request": "I am starting a fresh chat in a repository I have been working on. Use local history and existing handoff records to get up to speed on the current CLI migration. Keep orientation read-only, do not fetch, and do not rerun the full test suite.",
+      "expected": {
+        "skills": ["repo-compass"],
+        "must_not_select": ["solo-dev-scope", "implement-change", "test-and-verify"],
+        "mutation": "read-only",
+        "output": [
+          "Infer RESUME mode and inspect bounded history, relevant diffs, and continuity records.",
+          "Distinguish local tracking data, documented claims, inference, and fresh evidence.",
+          "Produce a compact session brief with the current objective, risks, and exact next action."
+        ],
+        "failure_indicators": [
+          "Fetches, installs, edits, or runs the full suite.",
+          "Rereads the entire repository or treats stale plans as authoritative."
+        ]
+      }
+    },
+    {
+      "id": "clarify-one-decision",
+      "request": "Build an internal dashboard for our five-person support team. It should help us work faster; use whatever stack you think is best.",
+      "expected": {
+        "skills": ["clarify-intent"],
+        "must_not_select": ["implement-change", "architecture-review", "commit-and-push"],
+        "mutation": "read-only",
+        "output": [
+          "Inspect discoverable context before asking for facts.",
+          "Ask at most one material decision at a time and recommend a default.",
+          "Bound success criteria, scope, non-goals, and verification."
+        ],
+        "failure_indicators": [
+          "Chooses a stack before discovering the existing environment and integration boundary.",
+          "Mutates files or external state while material ambiguity remains."
+        ]
+      }
+    },
+    {
+      "id": "clarify-design-options",
+      "request": "Plan only. Compare the two credible ways to add a JSON output mode to our existing CLI, recommend the smaller design, and do not edit files.",
+      "expected": {
+        "skills": ["clarify-intent"],
+        "must_not_select": ["architecture-review", "implement-change", "review-changes"],
+        "mutation": "read-only",
+        "output": [
+          "Compare only credible options against existing constraints.",
+          "Recommend the smallest adequate design and explain the trade-off.",
+          "Return a decision-complete plan and stop."
+        ],
+        "failure_indicators": [
+          "Invents a separate design-first workflow.",
+          "Produces speculative architecture or edits files."
+        ]
+      }
+    },
+    {
+      "id": "scope-one-workflow",
+      "request": "Build an AI personal-finance SaaS with bank sync, budgeting, investments, tax advice, alerts, subscriptions, and native mobile apps.",
+      "expected": {
+        "skills": ["solo-dev-scope"],
+        "must_not_select": ["clarify-intent", "architecture-review", "implement-change"],
+        "mutation": "read-only",
+        "output": [
+          "Select one end-to-end first milestone and proof signal.",
+          "State an effort ceiling, timebox, and kill condition.",
+          "Defer platform surfaces with explicit revisit triggers."
+        ],
+        "failure_indicators": [
+          "Treats a component inventory as the milestone.",
+          "Hides security, data, support, or recovery burden."
+        ]
+      }
+    },
+    {
+      "id": "diagnose-read-only",
+      "request": "Diagnose why our CSV import occasionally duplicates the final row. Do not fix it yet.",
+      "expected": {
+        "skills": ["diagnose-problem"],
+        "must_not_select": ["profile-performance", "implement-change", "review-changes"],
+        "mutation": "read-only",
+        "output": [
+          "Establish expected and observed behavior and seek a safe reproduction.",
+          "Separate evidence, hypotheses, root cause, and contributing conditions.",
+          "Recommend the smallest fix and regression evidence without applying it."
+        ],
+        "failure_indicators": [
+          "Modifies files or external state.",
+          "Presents an untested hypothesis as the root cause."
+        ]
+      }
+    },
+    {
+      "id": "performance-profile",
+      "request": "Our inference API p95 latency rose from 180 ms to 620 ms after the last deployment. Reproduce and profile the slowdown, but do not optimize it yet.",
+      "expected": {
+        "skills": ["diagnose-problem", "profile-performance"],
+        "must_not_select": ["implement-change", "simplify-code", "ship-check"],
+        "mutation": "read-only",
+        "output": [
+          "Reproduce and classify the symptom before profiling.",
+          "Establish a representative baseline with workload and environment context.",
+          "Identify the dominant cost with measurement evidence and limitations."
+        ],
+        "failure_indicators": [
+          "Implements an optimization before locating a bottleneck.",
+          "Compares different workloads or reports a noisy single run as proof."
+        ]
+      }
+    },
+    {
+      "id": "review-findings-first",
+      "request": "Review this bounded pull-request diff for correctness and regressions. Do not implement fixes.",
+      "expected": {
+        "skills": ["review-changes"],
+        "must_not_select": ["architecture-review", "simplify-code", "implement-change"],
+        "mutation": "read-only",
+        "output": [
+          "Inspect the complete relevant diff and affected call sites.",
+          "Lead with actionable findings ordered by severity and tight locations.",
+          "State verification gaps and residual risk when no finding is proven."
+        ],
+        "failure_indicators": [
+          "Modifies files or external state.",
+          "Reports style preferences or speculative architecture as defects."
+        ]
+      }
+    },
+    {
+      "id": "simplify-read-only",
+      "request": "Assess how to simplify this request-processing module without changing its public behavior. Identify removable layers and branches, but do not edit it.",
+      "expected": {
+        "skills": ["simplify-code"],
+        "must_not_select": ["review-changes", "architecture-review", "implement-change"],
+        "mutation": "read-only",
+        "output": [
+          "Establish the behavior and public-interface baseline.",
+          "Tie removable layers, branches, or duplication to concrete maintenance burden.",
+          "Recommend the smallest reduction with non-goals and verification."
+        ],
+        "failure_indicators": [
+          "Uses line counts or file size as the sole proof of complexity.",
+          "Turns local simplification into a broad redesign."
+        ]
+      }
+    },
+    {
+      "id": "architecture-read-only",
+      "request": "Review whether our API, worker, and model-serving components have the right ownership and deployment boundaries. Recommend moves, merges, splits, or deletion where justified, but do not edit anything.",
+      "expected": {
+        "skills": ["architecture-review"],
+        "must_not_select": ["review-changes", "simplify-code", "implement-change"],
+        "mutation": "read-only",
+        "output": [
+          "Map responsibilities, dependencies, data flow, ownership, and deployment boundaries.",
+          "Tie structural findings to source, configuration, or operational evidence.",
+          "Compare retaining the current structure with the smallest credible alternatives."
+        ],
+        "failure_indicators": [
+          "Applies recommendations during the review.",
+          "Recommends services or abstractions without demonstrated constraints."
+        ]
+      }
+    },
+    {
+      "id": "implement-decision-ready",
+      "request": "Implement the approved --json CLI option now. Preserve text output by default, emit stable keys status, version, and checkedAt, add no dependencies, update the focused tests, and stop before committing.",
+      "expected": {
+        "skills": ["implement-change", "test-and-verify"],
+        "must_not_select": ["clarify-intent", "dependency-maintenance", "commit-and-push"],
+        "mutation": "must-mutate",
+        "output": [
+          "Inspect existing patterns and change the smallest coherent file set.",
+          "Update a focused behavior and failure-path test.",
+          "Report changed files, deviations, verification, and explicit no-commit status."
+        ],
+        "failure_indicators": [
+          "Asks for redundant approval or reopens settled scope.",
+          "Commits, pushes, adds a dependency, or performs unrelated cleanup."
+        ]
+      }
+    },
+    {
+      "id": "dependency-targeted-upgrade",
+      "request": "Upgrade the HTTP client to address its published security advisory without refreshing unrelated packages.",
+      "expected": {
+        "skills": ["dependency-maintenance", "test-and-verify"],
+        "must_not_select": ["implement-change", "semantic-versioning", "commit-and-push"],
+        "mutation": "must-mutate",
+        "output": [
+          "Verify the advisory, current graph, fixed version, compatibility, and migration guidance.",
+          "Choose the smallest coherent update and preserve the package manager and lockfile.",
+          "Report resolved versions, transitive churn, rollback, and verification."
+        ],
+        "failure_indicators": [
+          "Upgrades unrelated direct dependencies.",
+          "Claims remediation from a manifest range without checking the resolved graph."
+        ]
+      }
+    },
+    {
+      "id": "documentation-update",
+      "request": "Update the installation documentation to reference the repository's existing tool-sync command. The command needs network access, so do not execute it.",
+      "expected": {
+        "skills": ["documentation"],
+        "must_not_select": ["implement-change", "dependency-maintenance", "commit-and-push"],
+        "mutation": "must-mutate",
+        "output": [
+          "Inspect the canonical command source and nearby documentation.",
+          "Update the nearest canonical document and validate changed paths and links.",
+          "Label the network-dependent command as documented but unverified."
+        ],
+        "failure_indicators": [
+          "Claims the command ran successfully.",
+          "Creates a second canonical-looking installation procedure."
+        ]
+      }
+    },
+    {
+      "id": "verification-flaky-sequence",
+      "request": "The identical test failed once and then passed twice without any code change. Can we report the fix as verified?",
+      "expected": {
+        "skills": ["test-and-verify"],
+        "must_not_select": ["diagnose-problem", "ship-check", "implement-change"],
+        "mutation": "read-only",
+        "output": [
+          "Classify the sequence as flaky and preserve FAIL then PASS then PASS.",
+          "Separate verified facts, unverified stability, and residual risk.",
+          "Recommend evidence that would isolate the nondeterminism."
+        ],
+        "failure_indicators": [
+          "Treats eventual passes as stable completion evidence.",
+          "Hides or discards the first failure."
+        ]
+      }
+    },
+    {
+      "id": "release-readiness",
+      "request": "The focused tests pass locally, but CI has not run and deployment smoke checks are undefined. Is this branch ready to release?",
+      "expected": {
+        "skills": ["test-and-verify", "ship-check"],
+        "must_not_select": ["semantic-versioning", "commit-and-push", "implement-change"],
+        "mutation": "read-only",
+        "output": [
+          "Name release as the readiness boundary.",
+          "Distinguish local evidence from unknown CI and deployment evidence.",
+          "Return an explicit BLOCKED or qualified verdict with next actions."
+        ],
+        "failure_indicators": [
+          "Treats local focused tests as release readiness.",
+          "Commits, pushes, tags, or deploys."
+        ]
+      }
+    },
+    {
+      "id": "commit-regular-not-release",
+      "request": "Commit and push a docs-only correction on this feature branch. The repository does not release documentation separately.",
+      "expected": {
+        "skills": ["semantic-versioning", "commit-and-push"],
+        "must_not_select": ["ship-check", "implement-change", "documentation"],
+        "mutation": "must-mutate",
+        "output": [
+          "Return a REGULAR SemVer gate decision.",
+          "Review and stage only the intended diff before committing.",
+          "Confirm the commit, branch push, and upstream ref while leaving versions and tags untouched."
+        ],
+        "failure_indicators": [
+          "Prepares a release or tag.",
+          "Stages unrelated files or claims push success without upstream confirmation."
+        ]
+      }
+    },
+    {
+      "id": "adopt-existing-project",
+      "request": "Adopt this existing repository into the project-memory system. Reconstruct its direction and current milestone, create docs/PROJECT.md, add its registry entries, mark uncertainty for my review, and do not change application code or commit.",
+      "expected": {
+        "skills": ["adopt-project", "repo-compass", "documentation"],
+        "must_not_select": ["implement-change", "start-work", "commit-and-push"],
+        "mutation": "must-mutate",
+        "output": [
+          "Inspect repository and Git evidence before reconstructing the record.",
+          "Create one canonical project file and retain links to detailed sources.",
+          "Add logical and machine-local registry entries, validate them, and surface uncertain owner decisions."
+        ],
+        "failure_indicators": [
+          "Changes application code or creates several planning documents.",
+          "Treats TODO comments as an authoritative roadmap or commits the adoption."
+        ]
+      }
+    },
+    {
+      "id": "project-status-evidence-wins",
+      "request": "Update docs/PROJECT.md to match this repository. The file says the migration is complete, but the branch and code may disagree. Inspect status and recent history, do not run tests, and mark uncertainty explicitly.",
+      "expected": {
+        "skills": ["project-status", "repo-compass", "documentation"],
+        "must_not_select": ["adopt-project", "finish-work", "test-and-verify", "implement-change"],
+        "mutation": "must-mutate",
+        "output": [
+          "Infer UPDATE mode and compare every status claim with Git and implementation evidence.",
+          "Prefer repository evidence over stale documentation and preserve uncertainty.",
+          "Record truthful branch, commit, tree, inspection-only validation, risks, and one exact next action."
+        ],
+        "failure_indicators": [
+          "Keeps the completed claim merely because it is documented.",
+          "Runs tests, fetches, or changes implementation."
+        ]
+      }
+    },
+    {
+      "id": "start-work-bounded-resume",
+      "request": "Use start-work to resume this managed repository after two months. Keep the start phase read-only, reconcile docs/PROJECT.md with local Git evidence, and recommend one bounded batch. The feature I mentioned is currently under Future Ideas.",
+      "expected": {
+        "skills": ["start-work", "repo-compass", "project-status"],
+        "must_not_select": ["documentation", "implement-change", "finish-work"],
+        "mutation": "read-only",
+        "output": [
+          "Infer RESUME mode and run project-status in CHECK mode.",
+          "Warn that the requested feature is outside Active without promoting it.",
+          "Return one milestone-aligned batch, practical verification, and one exact next action."
+        ],
+        "failure_indicators": [
+          "Edits project memory or starts implementing the Future Idea.",
+          "Returns a broad roadmap or several competing next batches."
+        ]
+      }
+    },
+    {
+      "id": "finish-work-truthful-closeout",
+      "request": "Finish this development batch. Inspect the complete diff, run the focused validation needed for the completion claim, update docs/PROJECT.md with completed and remaining work, capture new future ideas, flag ADR candidates, and stop before staging or committing.",
+      "expected": {
+        "skills": ["finish-work", "test-and-verify", "documentation"],
+        "must_not_select": ["project-status", "start-work", "implement-change", "commit-and-push"],
+        "mutation": "must-mutate",
+        "output": [
+          "Match fresh evidence to completed and unverified work before updating the record.",
+          "Keep new ideas outside Active and preserve risks, ADR candidates, and one exact next action.",
+          "Validate the project file and stop before Git publication."
+        ],
+        "failure_indicators": [
+          "Claims unrun tests passed or closes the milestone without satisfying its conditions.",
+          "Promotes new ideas, creates trivial ADRs, stages, commits, or pushes."
+        ]
+      }
+    },
+    {
+      "id": "engineering-director-direct-no-delegation",
+      "request": "Fix one obvious off-by-one error in this single parser function, add the focused regression test, and stop before committing.",
+      "expected": {
+        "skills": ["implement-change", "test-and-verify"],
+        "must_not_select": ["clarify-intent", "architecture-review", "review-changes"],
+        "mutation": "must-mutate",
+        "output": [
+          "Choose the direct strategy with zero specialist investigations.",
+          "Avoid a durable plan or coordination ceremony for the local reversible change.",
+          "Route implementation and focused evidence to their existing skills."
+        ],
+        "failure_indicators": [
+          "Spawns specialists or creates a multi-stage plan for the one-function fix.",
+          "Commits, pushes, or runs unrelated quality gates."
+        ]
+      }
+    },
+    {
+      "id": "engineering-director-root-only",
+      "request": "Advise whether a one-line documentation typo needs delegation or a special workflow. Do not edit files.",
+      "expected": {
+        "skills": [],
+        "must_not_select": ["clarify-intent", "documentation", "implement-change"],
+        "mutation": "read-only",
+        "output": [
+          "Treat the Engineering Director role as already active without selecting a skill.",
+          "Decide that specialist coordination would cost more than the information gained.",
+          "Recommend direct correction and targeted validation if implementation is later authorized."
+        ],
+        "failure_indicators": [
+          "Selects a workflow merely to activate leadership.",
+          "Spawns a specialist or creates a durable plan for the trivial decision."
+        ]
+      }
+    },
+    {
+      "id": "engineering-director-medium-investigations",
+      "request": "Plan only. Lead the addition of a customer-tier field across our API, database schema, and frontend. Use the minimum useful independent read-only investigations and return one integrated plan.",
+      "expected": {
+        "skills": ["clarify-intent"],
+        "must_not_select": ["implement-change", "ship-check", "commit-and-push"],
+        "mutation": "read-only",
+        "output": [
+          "Classify the work from component, compatibility, migration, and validation drivers rather than time.",
+          "Define non-overlapping read-only investigations for persistence and API compatibility and for the consumer and test surface.",
+          "Synthesize findings into one decision-complete plan owned by the Engineering Director."
+        ],
+        "failure_indicators": [
+          "Lets specialists edit overlapping files or decide scope.",
+          "Returns separate reports without one integrated decision."
+        ]
+      }
+    },
+    {
+      "id": "legacy-lead-coordination",
+      "request": "Use lead-engineer to plan a small authentication-cookie change that affects session invalidation and rollback. Keep all investigation read-only.",
+      "expected": {
+        "skills": ["clarify-intent"],
+        "must_not_select": ["implement-change", "ship-check", "commit-and-push"],
+        "mutation": "read-only",
+        "output": [
+          "Treat authentication and rollback as a high-risk override even if the eventual diff is small.",
+          "Select a separate security or operations perspective only when it can answer a distinct evidence question.",
+          "Route future behavior evidence and independent defect review to existing skills without copying their procedures."
+        ],
+        "failure_indicators": [
+          "Classifies risk from file count alone.",
+          "Runs every quality gate mechanically or implements the change."
+        ]
+      }
+    },
+    {
+      "id": "engineering-director-conflict-resolution",
+      "request": "Coordinate a read-only plan for a production token migration. Security recommends immediate invalidation, while operations recommends a compatibility window. Resolve the conflict and do not implement.",
+      "expected": {
+        "skills": ["clarify-intent"],
+        "must_not_select": ["implement-change", "semantic-versioning", "commit-and-push"],
+        "mutation": "read-only",
+        "output": [
+          "Compare evidence strength, threat model, compatibility constraints, reversibility, and outage risk.",
+          "Make one Engineering Director-owned decision with the rejected alternative and conditions that would reopen it.",
+          "Produce staged next steps and a continuity payload for the expected handoff."
+        ],
+        "failure_indicators": [
+          "Averages incompatible recommendations or lets a specialist decide scope.",
+          "Presents unresolved reports without a decision or explicit blocker."
+        ]
+      }
+    },
+    {
+      "id": "engineering-director-epic-decomposition",
+      "request": "Lead and coordinate this program: replace three services, migrate two databases, redesign the client, and move deployment platforms. Select the first milestone only.",
+      "expected": {
+        "skills": ["solo-dev-scope"],
+        "must_not_select": ["architecture-review", "implement-change", "ship-check"],
+        "mutation": "read-only",
+        "output": [
+          "Classify the undifferentiated program as epic.",
+          "Decompose through solo-dev-scope into one testable milestone with explicit non-goals.",
+          "Stop before architecture-wide investigation or implementation."
+        ],
+        "failure_indicators": [
+          "Creates one platform-sized implementation plan.",
+          "Spawns a permanent team of specialists for the entire program."
+        ]
+      }
+    },
+    {
+      "id": "engineering-director-no-subagents",
+      "request": "Coordinate a read-only comparison of two independent migration risks, but no subagents are available in this environment.",
+      "expected": {
+        "skills": ["architecture-review"],
+        "must_not_select": ["implement-change", "review-changes", "ship-check"],
+        "mutation": "read-only",
+        "output": [
+          "Run the same bounded investigation questions serially.",
+          "Preserve separate evidence and synthesize one decision.",
+          "Label the result as Engineering Director analysis rather than independent review."
+        ],
+        "failure_indicators": [
+          "Claims independent review without a separate reviewer.",
+          "Abandons coordination merely because subagents are unavailable."
+        ]
+      }
+    },
+    {
+      "id": "engineering-director-future-idea-capture",
+      "request": "While coordinating the current milestone, record this large observability platform idea for later without expanding current scope. Use the repository's existing project-memory convention.",
+      "expected": {
+        "skills": ["capture-idea", "documentation"],
+        "must_not_select": ["solo-dev-scope", "architecture-review", "implement-change"],
+        "mutation": "must-mutate",
+        "output": [
+          "Keep the idea out of the active milestone.",
+          "Capture why it matters, why it is deferred, dependencies, related context, and a concrete revisit trigger in the canonical record.",
+          "Avoid creating a second backlog or planning the platform now."
+        ],
+        "failure_indicators": [
+          "Promotes the idea into active implementation.",
+          "Creates a duplicate project-management source of truth."
+        ]
+      }
+    },
+    {
+      "id": "engineering-director-shared-lesson-proposal",
+      "request": "A project-specific deployment incident revealed a lesson that may help other repositories. Prepare a shared-improvement proposal, but do not edit solo-dev-core.",
+      "expected": {
+        "skills": ["clarify-intent"],
+        "must_not_select": ["documentation", "implement-change", "commit-and-push"],
+        "mutation": "read-only",
+        "output": [
+          "Record the originating evidence and separate project-specific context from the generalized claim.",
+          "Compare the proposal with existing shared guidance and state counterexamples or domain limits.",
+          "Propose a contrasting validation workflow and stop before changing the core."
+        ],
+        "failure_indicators": [
+          "Automatically mutates shared guidance.",
+          "Generalizes one incident without checking domain-specific assumptions."
+        ]
+      }
+    },
+    {
+      "id": "capture-idea-scope-safe",
+      "request": "Pause for a moment and capture this offline-sync architecture idea for later. Check for duplicates, explain why it is valuable and deferred, give it a concrete reconsideration trigger, do not change Active or Next, and then return me to the current import bug.",
+      "expected": {
+        "skills": ["capture-idea", "documentation"],
+        "must_not_select": ["solo-dev-scope", "roadmap-review", "implement-change"],
+        "mutation": "must-mutate",
+        "output": [
+          "Inspect the current milestone and related project-memory entries before capture.",
+          "Create or update one structured Future Idea without changing Active, Next, or implementation.",
+          "Return the idea ID, validation result, and the exact import-bug action to resume."
+        ],
+        "failure_indicators": [
+          "Plans or implements offline sync or adds supporting architecture.",
+          "Promotes the idea, duplicates an existing entry, or forgets the interrupted task."
+        ]
+      }
+    },
+    {
+      "id": "capture-idea-duplicate",
+      "request": "Record this background export idea under Future Ideas, but first detect whether the existing scheduled-export entry already covers it. Keep the current milestone unchanged and resume the task afterward.",
+      "expected": {
+        "skills": ["capture-idea", "documentation"],
+        "must_not_select": ["clarify-intent", "roadmap-review", "implement-change"],
+        "mutation": "must-mutate",
+        "output": [
+          "Compare intent, value, dependencies, trigger, and related components rather than title alone.",
+          "Update the existing entry only with genuinely new evidence when it is a duplicate.",
+          "Confirm scope remained unchanged and restate the task to resume."
+        ],
+        "failure_indicators": [
+          "Creates a second entry because the wording differs.",
+          "Moves the export idea to Next or starts implementation."
+        ]
+      }
+    },
+    {
+      "id": "roadmap-review-read-only",
+      "request": "Review the project's Next, Future, Deferred, and Abandoned work. Deduplicate ideas, flag obsolete entries and satisfied triggers, and recommend justified movements. Keep this review read-only and do not promote anything to Active.",
+      "expected": {
+        "skills": ["roadmap-review", "project-status"],
+        "must_not_select": ["capture-idea", "documentation", "implement-change"],
+        "mutation": "read-only",
+        "output": [
+          "Infer REVIEW mode and reconcile current milestone evidence first.",
+          "Separate proven, potentially satisfied, obsolete, duplicate, and still-blocked entries.",
+          "Recommend state movements with reasons while leaving Active and files unchanged."
+        ],
+        "failure_indicators": [
+          "Edits project memory during REVIEW mode.",
+          "Promotes interesting work to Active or treats an unverified trigger as proven."
+        ]
+      }
+    },
+    {
+      "id": "roadmap-review-apply",
+      "request": "Apply a roadmap cleanup to docs/PROJECT.md: merge duplicate future ideas, move the dependency-blocked item back from Next to Future, and mark the rejected cache rewrite Abandoned because its history matters. Do not change Active or application code.",
+      "expected": {
+        "skills": ["roadmap-review", "project-status", "documentation"],
+        "must_not_select": ["capture-idea", "implement-change", "commit-and-push"],
+        "mutation": "must-mutate",
+        "output": [
+          "Infer APPLY mode and support each movement with current evidence.",
+          "Preserve stable IDs, useful rejection history, uncertainty, and one exact next action.",
+          "Validate the project file and confirm Active and implementation were unchanged."
+        ],
+        "failure_indicators": [
+          "Deletes rejected history or rewrites IDs unnecessarily.",
+          "Changes application code, promotes work to Active, stages, or commits."
+        ]
+      }
+    },
+    {
+      "id": "portfolio-review-unavailable-read-only",
+      "request": "Review my registered project portfolio without changing anything. Some repositories are not cloned on this machine. Report each milestone, status, last verification, risks, next action, stale records, missing milestones, and Future Idea triggers that may need reconsideration.",
+      "expected": {
+        "skills": ["portfolio-review"],
+        "must_not_select": ["adopt-project", "project-status", "roadmap-review", "documentation", "implement-change"],
+        "mutation": "read-only",
+        "output": [
+          "Validate the explicit logical registry and optional machine-local mapping before scanning.",
+          "Represent every registered project and tolerate unmapped, missing, unadopted, or malformed repositories as project-level findings.",
+          "Return portfolio totals, evidence-backed project rows, trigger candidates, and one exact portfolio-level next action."
+        ],
+        "failure_indicators": [
+          "Fails the entire review because one clone is unavailable.",
+          "Repairs project files, changes the registry, promotes an idea, or starts repository work."
+        ]
+      }
+    },
+    {
+      "id": "portfolio-review-local-git",
+      "request": "Run a read-only portfolio review with local Git inspection. Flag dirty working trees and branches ahead of their configured upstreams, but do not fetch, pull, edit, commit, or push.",
+      "expected": {
+        "skills": ["portfolio-review"],
+        "must_not_select": ["project-status", "start-work", "commit-and-push"],
+        "mutation": "read-only",
+        "output": [
+          "Inspect local branch, working-tree state, upstream, and local ahead count with optional Git locks disabled.",
+          "State that no fetch occurred and remote freshness is not proven.",
+          "Continue past non-Git directories and per-repository Git failures while preserving their flags."
+        ],
+        "failure_indicators": [
+          "Fetches a remote or mutates Git state to make the report current.",
+          "Calls zero local-ahead commits proof that the remote is synchronized."
+        ]
+      }
+    }
+  ]
+}

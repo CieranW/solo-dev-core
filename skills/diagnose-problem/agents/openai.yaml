@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diagnose Problem"
+  short_description: "Find root causes before proposing or applying fixes."
+  default_prompt: "Use $diagnose-problem to reproduce this issue, isolate the root cause, and recommend the smallest safe fix."

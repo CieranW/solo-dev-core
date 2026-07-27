@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "projects": [
+    {
+      "id": "camdar",
+      "name": "CAMDAR",
+      "remote": "github.com/CieranW/CAMDAR"
+    },
+    {
+      "id": "cash-money",
+      "name": "Cash Money",
+      "remote": "github.com/CieranW/cash-money"
+    },
+    {
+      "id": "certificate-generator",
+      "name": "Certificate Generator",
+      "remote": "github.com/PenangAmateurSwimmingAssociation/CertificateGenerator"
+    },
+    {
+      "id": "cincaria-agent",
+      "name": "CINCARIA Agent",
+      "remote": "github.com/CINCARIA/CINCARIA-agent"
+    },
+    {
+      "id": "cincaria-data-platform",
+      "name": "CINCARIA Data Platform",
+      "remote": "github.com/CINCARIA/CINCARIA-data-platform"
+    },
+    {
+      "id": "cincaria-devsecops",
+      "name": "CINCARIA DevSecOps",
+      "remote": "github.com/CINCARIA/cincaria-devsecops"
+    },
+    {
+      "id": "cincaria-ops",
+      "name": "CINCARIA Ops",
+      "remote": "github.com/CINCARIA/cincaria-ops"
+    },
+    {
+      "id": "codex-token-monitor",
+      "name": "Codex Token Monitor",
+      "remote": "github.com/CieranW/codex-token-monitor"
+    },
+    {
+      "id": "emulation",
+      "name": "AYN Thor and Android Emulation",
+      "remote": "github.com/CieranW/emulation"
+    },
+    {
+      "id": "guides",
+      "name": "Guides",
+      "remote": "github.com/CieranW/guides"
+    },
+    {
+      "id": "hrdcs",
+      "name": "HRDCS",
+      "remote": "github.com/CINCARIA/HRDCS"
+    },
+    {
+      "id": "signal-shelf",
+      "name": "Signal Shelf",
+      "remote": "github.com/CieranW/signalshelf"
+    },
+    {
+      "id": "solo-dev-core",
+      "name": "solo-dev-core",
+      "remote": "github.com/CieranW/solo-dev-core"
+    },
+    {
+      "id": "translate-prodcomps",
+      "name": "Translate Prodcomps",
+      "remote": "github.com/CINCARIA/translate-prodcomps"
+    }
+  ]
+}

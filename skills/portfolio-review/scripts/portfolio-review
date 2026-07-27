@@ -1,0 +1,612 @@
+#!/usr/bin/env python3
+"""Produce a read-only portfolio report from solo-dev-core project memory."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+from datetime import date, datetime, timezone
+from pathlib import Path, PureWindowsPath
+from typing import Any
+
+
+PROJECT_ID_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+REMOTE_RE = re.compile(r"[A-Za-z0-9.-]+/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
+FIELD_RE = re.compile(r"^- (?P<key>[A-Za-z][A-Za-z0-9 /-]*):\s*(?P<value>.*)$")
+FUTURE_HEADING_RE = re.compile(
+    r"^(?P<id>FI-\d{8}-[a-z0-9]+(?:-[a-z0-9]+)*)\s+[—-]\s+(?P<title>.+)$"
+)
+DATE_RE = re.compile(r"\b20\d{2}-\d{2}-\d{2}\b")
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+UNSET_VALUES = {"", "unknown", "unset", "unverified", "none", "n/a"}
+REQUIRED_PROJECT_FIELDS = {
+    "Current Milestone": {"Name", "Status"},
+    "Exact Next Action": {"Action"},
+    "Last Verified": {"At", "Validation level"},
+}
+
+
+class InputError(ValueError):
+    """Raised for invalid registry or mapping input."""
+
+
+def reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise InputError(f"duplicate JSON key '{key}'")
+        result[key] = value
+    return result
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(
+            path.read_text(encoding="utf-8"),
+            object_pairs_hook=reject_duplicate_keys,
+        )
+    except FileNotFoundError as exc:
+        raise InputError(f"{path}: file does not exist") from exc
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise InputError(f"{path}: invalid JSON: {exc}") from exc
+    if not isinstance(value, dict):
+        raise InputError(f"{path}: top-level JSON value must be an object")
+    return value
+
+
+def load_registry(path: Path) -> list[dict[str, str]]:
+    value = load_json(path)
+    if set(value) - {"version", "projects"}:
+        raise InputError(f"{path}: unknown top-level fields")
+    if value.get("version") != 1 or not isinstance(value.get("projects"), list):
+        raise InputError(f"{path}: expected version 1 and a projects list")
+    projects: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for index, project in enumerate(value["projects"]):
+        location = f"{path}: projects[{index}]"
+        if not isinstance(project, dict) or set(project) != {"id", "name", "remote"}:
+            raise InputError(
+                f"{location}: expected exactly id, name, and remote fields"
+            )
+        project_id = project["id"]
+        name = project["name"]
+        remote = project["remote"]
+        if not isinstance(project_id, str) or not PROJECT_ID_RE.fullmatch(project_id):
+            raise InputError(f"{location}.id must be lowercase kebab-case")
+        if project_id in seen:
+            raise InputError(f"{path}: duplicate project id '{project_id}'")
+        if not isinstance(name, str) or not name.strip():
+            raise InputError(f"{location}.name must be non-empty")
+        if not isinstance(remote, str) or not REMOTE_RE.fullmatch(remote):
+            raise InputError(
+                f"{location}.remote must use host/owner/repository form"
+            )
+        seen.add(project_id)
+        projects.append({"id": project_id, "name": name, "remote": remote})
+    return projects
+
+
+def load_paths(path: Path | None, project_ids: set[str]) -> dict[str, str]:
+    if path is None:
+        return {}
+    value = load_json(path)
+    if set(value) - {"version", "paths"}:
+        raise InputError(f"{path}: unknown top-level fields")
+    paths = value.get("paths")
+    if value.get("version") != 1 or not isinstance(paths, dict):
+        raise InputError(f"{path}: expected version 1 and a paths object")
+    result: dict[str, str] = {}
+    for project_id, raw_path in paths.items():
+        if project_id not in project_ids:
+            raise InputError(f"{path}: path references unknown project '{project_id}'")
+        if not isinstance(raw_path, str) or not raw_path.strip():
+            raise InputError(f"{path}: path for '{project_id}' must be non-empty")
+        if not (Path(raw_path).is_absolute() or PureWindowsPath(raw_path).is_absolute()):
+            raise InputError(f"{path}: path for '{project_id}' must be absolute")
+        result[project_id] = raw_path
+    return result
+
+
+def parse_sections(content: str) -> dict[str, str]:
+    content = HTML_COMMENT_RE.sub("", content)
+    sections: dict[str, list[str]] = {}
+    current: str | None = None
+    fence: str | None = None
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("```", "~~~")):
+            marker = stripped[:3]
+            fence = None if fence == marker else marker
+        if fence is None and line.startswith("## "):
+            current = line[3:].strip()
+            sections[current] = []
+        elif current is not None:
+            sections[current].append(line)
+    return {name: "\n".join(lines).strip() for name, lines in sections.items()}
+
+
+def parse_fields(body: str) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    for line in body.splitlines():
+        match = FIELD_RE.fullmatch(line)
+        if match and match.group("key") not in fields:
+            fields[match.group("key")] = match.group("value").strip()
+    return fields
+
+
+def parse_risks(body: str) -> list[str]:
+    risks: list[str] = []
+    for line in body.splitlines():
+        if line.startswith("- "):
+            value = line[2:].strip()
+            if value and value.casefold() not in {"none.", "_none._"}:
+                risks.append(value)
+    return risks
+
+
+def parse_future_ideas(body: str, as_of: date) -> list[dict[str, str | None]]:
+    entries: list[tuple[str, list[str]]] = []
+    current: tuple[str, list[str]] | None = None
+    for line in body.splitlines():
+        if line.startswith("### "):
+            current = (line[4:].strip(), [])
+            entries.append(current)
+        elif current is not None:
+            current[1].append(line)
+    ideas: list[dict[str, str | None]] = []
+    for heading, lines in entries:
+        match = FUTURE_HEADING_RE.fullmatch(heading)
+        if not match:
+            continue
+        fields = parse_fields("\n".join(lines))
+        trigger = fields.get("Reconsider when", "")
+        reached_dates = []
+        for raw_date in DATE_RE.findall(trigger):
+            try:
+                parsed = date.fromisoformat(raw_date)
+            except ValueError:
+                continue
+            if parsed <= as_of:
+                reached_dates.append(raw_date)
+        ideas.append(
+            {
+                "id": match.group("id"),
+                "title": match.group("title").strip(),
+                "trigger": trigger,
+                "signal": "date-reached" if reached_dates else None,
+                "signal_evidence": ", ".join(reached_dates) if reached_dates else None,
+            }
+        )
+    return ideas
+
+
+def parse_verified_at(raw: str, as_of: date) -> tuple[int | None, bool | None]:
+    if raw.casefold() in UNSET_VALUES:
+        return None, True
+    try:
+        verified = datetime.fromisoformat(raw.replace("Z", "+00:00")).date()
+    except ValueError:
+        try:
+            verified = date.fromisoformat(raw)
+        except ValueError:
+            return None, None
+    return (as_of - verified).days, None
+
+
+def run_git(repo: Path, arguments: list[str]) -> subprocess.CompletedProcess[str]:
+    environment = os.environ.copy()
+    environment["GIT_OPTIONAL_LOCKS"] = "0"
+    return subprocess.run(
+        ["git", "-C", str(repo), *arguments],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=environment,
+    )
+
+
+def inspect_git(repo: Path) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "inspected": True,
+        "branch": None,
+        "dirty": None,
+        "upstream": None,
+        "ahead": None,
+        "error": None,
+    }
+    inside = run_git(repo, ["rev-parse", "--is-inside-work-tree"])
+    if inside.returncode != 0 or inside.stdout.strip() != "true":
+        result["error"] = "not a Git work tree"
+        return result
+    branch = run_git(repo, ["rev-parse", "--abbrev-ref", "HEAD"])
+    if branch.returncode == 0:
+        result["branch"] = branch.stdout.strip()
+    status = run_git(repo, ["status", "--porcelain", "--untracked-files=normal"])
+    if status.returncode == 0:
+        result["dirty"] = bool(status.stdout)
+    else:
+        result["error"] = status.stderr.strip() or "git status failed"
+        return result
+    upstream = run_git(
+        repo, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"]
+    )
+    if upstream.returncode != 0:
+        return result
+    result["upstream"] = upstream.stdout.strip()
+    ahead = run_git(repo, ["rev-list", "--count", "@{upstream}..HEAD"])
+    if ahead.returncode == 0:
+        try:
+            result["ahead"] = int(ahead.stdout.strip())
+        except ValueError:
+            result["error"] = "invalid Git ahead count"
+    else:
+        result["error"] = ahead.stderr.strip() or "git ahead inspection failed"
+    return result
+
+
+def review_project(
+    project: dict[str, str],
+    raw_path: str | None,
+    as_of: date,
+    stale_days: int,
+    inspect_git_state: bool,
+) -> dict[str, Any]:
+    record: dict[str, Any] = {
+        **project,
+        "path": raw_path,
+        "availability": "unmapped",
+        "project_file": "not-inspected",
+        "milestone": {"name": None, "status": None},
+        "last_verified": {
+            "at": None,
+            "validation_level": None,
+            "age_days": None,
+            "stale": None,
+        },
+        "risks": [],
+        "next_action": None,
+        "future_ideas": [],
+        "git": {"inspected": False},
+        "recommended_action": None,
+        "flags": [],
+        "errors": [],
+    }
+    if raw_path is None:
+        record["flags"].append("unavailable-unmapped")
+        record["recommended_action"] = (
+            f"Add a local path mapping or clone {project['remote']} for "
+            f"{project['id']}."
+        )
+        return record
+    repo = Path(raw_path)
+    if not repo.is_dir():
+        record["availability"] = "missing"
+        record["flags"].append("unavailable-missing-path")
+        record["recommended_action"] = (
+            f"Restore or correct the local path mapping for {project['id']}: "
+            f"{raw_path}."
+        )
+        return record
+    record["availability"] = "available"
+    project_path = repo / "docs" / "PROJECT.md"
+    try:
+        content = project_path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        record["project_file"] = "missing"
+        record["flags"].append("missing-project-file")
+        record["recommended_action"] = (
+            f"Adopt {project['id']} at {repo} to create docs/PROJECT.md."
+        )
+    except (OSError, UnicodeError) as exc:
+        record["project_file"] = "invalid"
+        record["errors"].append(f"cannot read docs/PROJECT.md: {exc}")
+        record["flags"].append("invalid-project-file")
+        record["recommended_action"] = (
+            f"Inspect and repair project memory for {project['id']} at "
+            f"{project_path}."
+        )
+    else:
+        sections = parse_sections(content)
+        required = {
+            "Current Milestone",
+            "Risks and Unknowns",
+            "Exact Next Action",
+            "Last Verified",
+        }
+        missing = sorted(required - sections.keys())
+        if missing:
+            record["project_file"] = "invalid"
+            record["errors"].append("missing sections: " + ", ".join(missing))
+            record["flags"].append("invalid-project-file")
+            record["recommended_action"] = (
+                f"Reconcile malformed project memory for {project['id']} at "
+                f"{project_path}."
+            )
+        else:
+            section_fields = {
+                section: parse_fields(sections[section])
+                for section in REQUIRED_PROJECT_FIELDS
+            }
+            missing_fields = [
+                f"{section}/{field}"
+                for section, required_fields in REQUIRED_PROJECT_FIELDS.items()
+                for field in sorted(required_fields - section_fields[section].keys())
+            ]
+            if missing_fields:
+                record["project_file"] = "invalid"
+                record["errors"].append(
+                    "missing fields: " + ", ".join(missing_fields)
+                )
+                record["flags"].append("invalid-project-file")
+                record["recommended_action"] = (
+                    f"Reconcile malformed project memory for {project['id']} at "
+                    f"{project_path}."
+                )
+            else:
+                record["project_file"] = "ok"
+            milestone = section_fields["Current Milestone"]
+            name = milestone.get("Name")
+            status = milestone.get("Status")
+            record["milestone"] = {"name": name, "status": status}
+            if name is None or name.casefold().rstrip(".") in UNSET_VALUES:
+                record["flags"].append("missing-current-milestone")
+            if status == "Uncertain":
+                record["flags"].append("uncertain-milestone")
+            if status == "Blocked":
+                record["flags"].append("blocked-milestone")
+            verified = section_fields["Last Verified"]
+            verified_at = verified.get("At", "")
+            age_days, unverified = parse_verified_at(verified_at, as_of)
+            stale = unverified if unverified is not None else (
+                age_days is not None and age_days > stale_days
+            )
+            record["last_verified"] = {
+                "at": verified_at or None,
+                "validation_level": verified.get("Validation level"),
+                "age_days": age_days,
+                "stale": stale,
+            }
+            if stale:
+                record["flags"].append("stale-project-file")
+            elif stale is None:
+                record["flags"].append("invalid-last-verified")
+            if age_days is not None and age_days < 0:
+                record["flags"].append("future-last-verified")
+            record["risks"] = parse_risks(sections["Risks and Unknowns"])
+            if record["risks"]:
+                record["flags"].append("project-risk")
+            record["next_action"] = section_fields["Exact Next Action"].get("Action")
+            record["future_ideas"] = parse_future_ideas(
+                sections.get("Future Ideas", ""), as_of
+            )
+            if any(idea["signal"] for idea in record["future_ideas"]):
+                record["flags"].append("future-trigger-candidate")
+    if inspect_git_state:
+        record["git"] = inspect_git(repo)
+        git = record["git"]
+        if git.get("dirty"):
+            record["flags"].append("dirty-working-tree")
+        if isinstance(git.get("ahead"), int) and git["ahead"] > 0:
+            record["flags"].append("local-branch-ahead")
+        if git.get("error"):
+            record["flags"].append("git-inspection-error")
+    return record
+
+
+def select_next_action(projects: list[dict[str, Any]]) -> str:
+    if not projects:
+        return "Adopt or register one project before the next portfolio review."
+
+    priorities = (
+        "unavailable-missing-path",
+        "unavailable-unmapped",
+        "missing-project-file",
+        "invalid-project-file",
+        "blocked-milestone",
+        "missing-current-milestone",
+        "uncertain-milestone",
+        "dirty-working-tree",
+        "local-branch-ahead",
+        "stale-project-file",
+        "invalid-last-verified",
+        "project-risk",
+        "future-trigger-candidate",
+    )
+    for flag in priorities:
+        for project in projects:
+            if flag not in project["flags"]:
+                continue
+            if project["recommended_action"]:
+                return project["recommended_action"]
+            if flag in {
+                "blocked-milestone",
+                "missing-current-milestone",
+                "uncertain-milestone",
+                "stale-project-file",
+                "invalid-last-verified",
+            }:
+                return (
+                    f"Reconcile {project['id']} project memory with "
+                    "project-status."
+                )
+            if flag == "dirty-working-tree":
+                return (
+                    f"Inspect and resolve the {project['id']} working tree "
+                    "before portfolio planning."
+                )
+            if flag == "local-branch-ahead":
+                return (
+                    f"Review {project['id']}'s local-ahead commits and decide "
+                    "whether to publish them."
+                )
+            if flag == "project-risk":
+                return (
+                    f"Review the highest-priority {project['id']} risk: "
+                    f"{project['risks'][0]}"
+                )
+            if flag == "future-trigger-candidate":
+                idea = next(
+                    idea
+                    for idea in project["future_ideas"]
+                    if idea["signal"] is not None
+                )
+                return (
+                    f"Review {project['id']} Future Idea {idea['id']} with "
+                    "roadmap-review."
+                )
+
+    return (
+        f"Resume {projects[0]['id']} from its recorded exact next action: "
+        f"{projects[0]['next_action'] or 'reconcile its project record first'}"
+    )
+
+
+def summarize(projects: list[dict[str, Any]]) -> dict[str, int]:
+    def count(predicate: Any) -> int:
+        return sum(1 for project in projects if predicate(project))
+
+    return {
+        "total": len(projects),
+        "available": count(lambda p: p["availability"] == "available"),
+        "unavailable": count(lambda p: p["availability"] != "available"),
+        "missing_project_file": count(
+            lambda p: p["project_file"] in {"missing", "invalid"}
+        ),
+        "stale": count(lambda p: "stale-project-file" in p["flags"]),
+        "dirty": count(lambda p: "dirty-working-tree" in p["flags"]),
+        "ahead": count(lambda p: "local-branch-ahead" in p["flags"]),
+        "missing_milestone": count(
+            lambda p: "missing-current-milestone" in p["flags"]
+        ),
+        "trigger_candidates": count(
+            lambda p: "future-trigger-candidate" in p["flags"]
+        ),
+    }
+
+
+def render_text(report: dict[str, Any]) -> str:
+    summary = report["summary"]
+    lines = [
+        (
+            "Portfolio review: "
+            f"{summary['total']} registered, {summary['available']} available, "
+            f"{summary['unavailable']} unavailable, {summary['stale']} stale, "
+            f"{summary['dirty']} dirty, {summary['ahead']} ahead"
+        ),
+        (
+            f"As of {report['as_of']}; stale after "
+            f"{report['stale_after_days']} days; Git inspection "
+            f"{'enabled' if report['inspect_git'] else 'disabled'}"
+        ),
+    ]
+    for project in report["projects"]:
+        milestone = project["milestone"]["name"] or "-"
+        status = project["milestone"]["status"] or "-"
+        verified = project["last_verified"]["at"] or "-"
+        flags = ", ".join(project["flags"]) or "none"
+        lines.append(
+            f"- {project['id']}: {project['availability']}; "
+            f"milestone={milestone} ({status}); verified={verified}; flags={flags}"
+        )
+        if project["next_action"]:
+            lines.append(f"  next: {project['next_action']}")
+        if project["recommended_action"]:
+            lines.append(f"  portfolio action: {project['recommended_action']}")
+        for risk in project["risks"]:
+            lines.append(f"  risk: {risk}")
+        git = project["git"]
+        if git.get("inspected"):
+            lines.append(
+                "  git: "
+                f"branch={git.get('branch') or '-'}; "
+                f"dirty={git.get('dirty')}; "
+                f"upstream={git.get('upstream') or '-'}; "
+                f"ahead={git.get('ahead')}"
+            )
+        for idea in project["future_ideas"]:
+            if idea["signal"]:
+                lines.append(
+                    f"  trigger: {idea['id']} ({idea['signal']}): {idea['trigger']}"
+                )
+    lines.extend(
+        [
+            f"Exact portfolio next action: {report['next_action']}",
+            "Read-only confirmation: no repository, registry, Git state, "
+            "commit, or remote was changed.",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Read registered project memory and produce a portfolio report."
+    )
+    parser.add_argument("--registry", required=True, type=Path)
+    parser.add_argument("--paths", type=Path)
+    parser.add_argument("--inspect-git", action="store_true")
+    parser.add_argument("--stale-after-days", type=int, default=30)
+    parser.add_argument("--as-of", type=date.fromisoformat, default=date.today())
+    parser.add_argument("--format", choices=("text", "json"), default="text")
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    if args.stale_after_days < 0:
+        print("[ERROR] --stale-after-days must be non-negative", file=sys.stderr)
+        return 2
+    registry_path = args.registry.resolve()
+    paths_path = args.paths.resolve() if args.paths is not None else None
+    if paths_path is None:
+        default_paths = registry_path.parent / "paths.local.json"
+        if default_paths.is_file():
+            paths_path = default_paths
+    try:
+        projects = load_registry(registry_path)
+        local_paths = load_paths(paths_path, {project["id"] for project in projects})
+    except InputError as exc:
+        print(f"[ERROR] {exc}", file=sys.stderr)
+        return 2
+    reviewed = [
+        review_project(
+            project,
+            local_paths.get(project["id"]),
+            args.as_of,
+            args.stale_after_days,
+            args.inspect_git,
+        )
+        for project in projects
+    ]
+    report = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "as_of": args.as_of.isoformat(),
+        "registry": str(registry_path),
+        "paths": str(paths_path) if paths_path is not None else None,
+        "inspect_git": args.inspect_git,
+        "git_remote_freshness": (
+            "not fetched; ahead counts use local upstream refs"
+            if args.inspect_git
+            else "not inspected"
+        ),
+        "stale_after_days": args.stale_after_days,
+        "summary": summarize(reviewed),
+        "projects": reviewed,
+        "next_action": select_next_action(reviewed),
+        "read_only_confirmation": (
+            "No repository, registry, Git state, commit, or remote was changed."
+        ),
+    }
+    if args.format == "json":
+        print(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        print(render_text(report))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,4 +1,4 @@
 interface:
   display_name: "Commit And Push"
-  short_description: "Stage, commit, and push Git work safely."
-  default_prompt: "Use commit-and-push to review, commit, and push the current changes."
+  short_description: "Assess SemVer, then commit and push safely."
+  default_prompt: "Use $commit-and-push to run the SemVer gate, prepare the right commit, and push the current changes."

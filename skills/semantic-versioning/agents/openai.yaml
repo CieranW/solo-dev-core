@@ -1,4 +1,4 @@
 interface:
   display_name: "Semantic Versioning"
-  short_description: "Recommend, prepare, and audit SemVer releases safely."
-  default_prompt: "Use semantic-versioning to inspect changes and recommend the next release version."
+  short_description: "Choose regular or release commits with SemVer evidence."
+  default_prompt: "Use $semantic-versioning to decide whether these changes need a regular or release commit and recommend the version when needed."

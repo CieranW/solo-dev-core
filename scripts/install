@@ -1,0 +1,320 @@
+#!/bin/sh
+set -eu
+
+usage() {
+    printf '%s\n' "Usage: scripts/install [options]"
+    printf '%s\n' ""
+    printf '%s\n' "Install solo-dev-core from this checkout using canonical symlinks."
+    printf '%s\n' ""
+    printf '%s\n' "Options:"
+    printf '%s\n' "  --check              Validate the expected links without changing anything."
+    printf '%s\n' "  --dry-run            Show planned changes without applying them."
+    printf '%s\n' "  --global-only        Install only global guidance; use with marketplace-provided skills."
+    printf '%s\n' "  --replace-links       Refresh conflicting symlinks; never replaces files or directories."
+    printf '%s\n' "  --skills-dir PATH     Override the user skill directory."
+    printf '%s\n' "  --global-file PATH    Override the global AGENTS.md destination."
+    printf '%s\n' "  -h, --help            Show this help."
+}
+
+fail() {
+    printf '[ERROR] %s\n' "$*" >&2
+    exit 2
+}
+
+path_exists() {
+    [ -e "$1" ] || [ -L "$1" ]
+}
+
+canonical_existing() {
+    canonical_input=$1
+    if [ -d "$canonical_input" ]; then
+        (
+            CDPATH='' cd "$canonical_input"
+            pwd -P
+        )
+        return
+    fi
+    canonical_dir=$(dirname "$canonical_input")
+    canonical_name=$(basename "$canonical_input")
+    (
+        CDPATH='' cd "$canonical_dir"
+        printf '%s/%s\n' "$(pwd -P)" "$canonical_name"
+    )
+}
+
+resolved_link() {
+    resolved_target=$1
+    raw_link=$(readlink "$resolved_target") || return 1
+    case "$raw_link" in
+        /*) resolved_candidate=$raw_link ;;
+        *) resolved_candidate=$(dirname "$resolved_target")/$raw_link ;;
+    esac
+    canonical_existing "$resolved_candidate"
+}
+
+link_matches() {
+    match_target=$1
+    match_source=$2
+    [ -L "$match_target" ] || return 1
+    resolved=$(resolved_link "$match_target" 2>/dev/null) || return 1
+    expected=$(canonical_existing "$match_source")
+    [ "$resolved" = "$expected" ]
+}
+
+describe_existing() {
+    described_path=$1
+    if [ -L "$described_path" ]; then
+        printf 'symlink to %s' "$(readlink "$described_path")"
+    elif [ -d "$described_path" ]; then
+        printf 'directory'
+    elif [ -f "$described_path" ]; then
+        printf 'file'
+    else
+        printf 'special filesystem entry'
+    fi
+}
+
+mode=install
+replace_links=0
+install_skills=1
+skills_dir=
+global_file=
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --check)
+            [ "$mode" = install ] || fail "--check and --dry-run are mutually exclusive"
+            mode=check
+            ;;
+        --dry-run)
+            [ "$mode" = install ] || fail "--check and --dry-run are mutually exclusive"
+            mode=dry-run
+            ;;
+        --replace-links)
+            replace_links=1
+            ;;
+        --global-only)
+            install_skills=0
+            ;;
+        --skills-dir)
+            [ "$#" -ge 2 ] || fail "--skills-dir requires a path"
+            skills_dir=$2
+            shift
+            ;;
+        --global-file)
+            [ "$#" -ge 2 ] || fail "--global-file requires a path"
+            global_file=$2
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            fail "unknown option: $1"
+            ;;
+    esac
+    shift
+done
+
+case "$(uname -s)" in
+    Darwin|Linux) ;;
+    *)
+        fail "native installation supports macOS and Linux; use WSL on Windows"
+        ;;
+esac
+
+script_dir=$(CDPATH='' cd "$(dirname "$0")" && pwd -P)
+repo_root=$(CDPATH='' cd "$script_dir/.." && pwd -P)
+skills_source=$repo_root/skills
+global_source=$repo_root/global/AGENTS.md
+retired_skills="lead-engineer"
+
+[ -d "$skills_source" ] || fail "missing skill source directory: $skills_source"
+[ -f "$global_source" ] || fail "missing global guidance: $global_source"
+
+if [ -z "$skills_dir" ] || [ -z "$global_file" ]; then
+    [ -n "${HOME:-}" ] || fail "HOME is required unless both destinations are provided"
+fi
+if [ -z "$skills_dir" ]; then
+    skills_dir=$HOME/.agents/skills
+fi
+if [ -z "$global_file" ]; then
+    global_file=$HOME/.codex/AGENTS.md
+fi
+
+conflicts=0
+skill_count=0
+
+if [ "$install_skills" -eq 1 ]; then
+    for retired_skill in $retired_skills; do
+        retired_target=$skills_dir/$retired_skill
+        retired_source=$skills_source/$retired_skill
+        if link_matches "$retired_target" "$retired_source" && [ "$mode" = check ]; then
+            printf '[ERROR] retired skill link remains: %s\n' "$retired_target" >&2
+            conflicts=$((conflicts + 1))
+        fi
+    done
+
+    for source in "$skills_source"/*; do
+        [ -d "$source" ] || continue
+        [ -f "$source/SKILL.md" ] || continue
+        skill_count=$((skill_count + 1))
+        target=$skills_dir/$(basename "$source")
+        if link_matches "$target" "$source"; then
+            continue
+        fi
+        if ! path_exists "$target"; then
+            if [ "$mode" = check ]; then
+                printf '[ERROR] missing skill link: %s\n' "$target" >&2
+                conflicts=$((conflicts + 1))
+            fi
+            continue
+        fi
+        if [ -L "$target" ] && [ "$replace_links" -eq 1 ] && [ "$mode" != check ]; then
+            continue
+        fi
+        printf '[ERROR] skill conflict: %s is a %s\n' \
+            "$target" "$(describe_existing "$target")" >&2
+        conflicts=$((conflicts + 1))
+    done
+fi
+
+if link_matches "$global_file" "$global_source"; then
+    :
+elif ! path_exists "$global_file"; then
+    if [ "$mode" = check ]; then
+        printf '[ERROR] missing global guidance link: %s\n' "$global_file" >&2
+        conflicts=$((conflicts + 1))
+    fi
+elif [ -L "$global_file" ] && [ "$replace_links" -eq 1 ] && [ "$mode" != check ]; then
+    :
+else
+    printf '[ERROR] global guidance conflict: %s is a %s\n' \
+        "$global_file" "$(describe_existing "$global_file")" >&2
+    conflicts=$((conflicts + 1))
+fi
+
+if [ "$conflicts" -gt 0 ]; then
+    printf '[ERROR] installation stopped before changes: %s conflict(s)\n' \
+        "$conflicts" >&2
+    printf '%s\n' "Resolve files/directories manually; use --replace-links only for symlinks." >&2
+    exit 2
+fi
+
+if [ "$mode" = check ]; then
+    printf 'Installation check passed: %s skill link(s) and global guidance.\n' \
+        "$skill_count"
+    exit 0
+fi
+
+if [ "$mode" = dry-run ]; then
+    printf 'Dry run: source checkout %s\n' "$repo_root"
+    if [ "$install_skills" -eq 1 ]; then
+        for retired_skill in $retired_skills; do
+            retired_target=$skills_dir/$retired_skill
+            retired_source=$skills_source/$retired_skill
+            if link_matches "$retired_target" "$retired_source"; then
+                printf '[PLAN] remove retired skill link %s\n' "$retired_target"
+            fi
+        done
+        for source in "$skills_source"/*; do
+            [ -d "$source" ] || continue
+            [ -f "$source/SKILL.md" ] || continue
+            target=$skills_dir/$(basename "$source")
+            if link_matches "$target" "$source"; then
+                printf '[OK] %s\n' "$target"
+            elif [ -L "$target" ]; then
+                printf '[PLAN] refresh %s -> %s\n' "$target" "$source"
+            else
+                printf '[PLAN] link %s -> %s\n' "$target" "$source"
+            fi
+        done
+    fi
+    if link_matches "$global_file" "$global_source"; then
+        printf '[OK] %s\n' "$global_file"
+    elif [ -L "$global_file" ]; then
+        printf '[PLAN] refresh %s -> %s\n' "$global_file" "$global_source"
+    else
+        printf '[PLAN] link %s -> %s\n' "$global_file" "$global_source"
+    fi
+    printf '%s\n' "Dry run complete; no files changed."
+    exit 0
+fi
+
+if [ "$install_skills" -eq 1 ]; then
+    mkdir -p "$skills_dir"
+fi
+mkdir -p "$(dirname "$global_file")"
+changes=0
+
+if [ "$install_skills" -eq 1 ]; then
+    for retired_skill in $retired_skills; do
+        retired_target=$skills_dir/$retired_skill
+        retired_source=$skills_source/$retired_skill
+        if link_matches "$retired_target" "$retired_source"; then
+            unlink "$retired_target"
+            printf '[REMOVE] retired skill link %s\n' "$retired_target"
+            changes=$((changes + 1))
+        fi
+    done
+
+    for source in "$skills_source"/*; do
+        [ -d "$source" ] || continue
+        [ -f "$source/SKILL.md" ] || continue
+        target=$skills_dir/$(basename "$source")
+        if link_matches "$target" "$source"; then
+            printf '[OK] %s\n' "$target"
+            continue
+        fi
+        if [ -L "$target" ]; then
+            unlink "$target"
+        fi
+        ln -s "$(canonical_existing "$source")" "$target"
+        printf '[LINK] %s -> %s\n' "$target" "$source"
+        changes=$((changes + 1))
+    done
+fi
+
+if link_matches "$global_file" "$global_source"; then
+    printf '[OK] %s\n' "$global_file"
+else
+    if [ -L "$global_file" ]; then
+        unlink "$global_file"
+    fi
+    ln -s "$(canonical_existing "$global_source")" "$global_file"
+    printf '[LINK] %s -> %s\n' "$global_file" "$global_source"
+    changes=$((changes + 1))
+fi
+
+validation_errors=0
+if [ "$install_skills" -eq 1 ]; then
+    for source in "$skills_source"/*; do
+        [ -d "$source" ] || continue
+        [ -f "$source/SKILL.md" ] || continue
+        target=$skills_dir/$(basename "$source")
+        if ! link_matches "$target" "$source" || [ ! -f "$target/SKILL.md" ]; then
+            printf '[ERROR] invalid skill link after install: %s\n' "$target" >&2
+            validation_errors=$((validation_errors + 1))
+        fi
+    done
+fi
+if ! link_matches "$global_file" "$global_source" || [ ! -f "$global_file" ]; then
+    printf '[ERROR] invalid global guidance link after install: %s\n' \
+        "$global_file" >&2
+    validation_errors=$((validation_errors + 1))
+fi
+if [ "$validation_errors" -gt 0 ]; then
+    printf '[ERROR] installation validation failed: %s error(s)\n' \
+        "$validation_errors" >&2
+    exit 1
+fi
+
+printf 'Installation passed: %s skill link(s), global guidance, %s change(s).\n' \
+    "$skill_count" "$changes"
+printf 'Update with: git -C "%s" pull --ff-only\n' "$repo_root"
+if [ "$install_skills" -eq 1 ]; then
+    printf 'Then rerun: "%s/scripts/install"\n' "$repo_root"
+else
+    printf 'Then rerun: "%s/scripts/install" --global-only\n' "$repo_root"
+fi

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Profile Performance"
+  short_description: "Measure bottlenecks and compare before and after."
+  default_prompt: "Use $profile-performance to establish a baseline, locate the bottleneck, and compare evidence-backed improvements."
