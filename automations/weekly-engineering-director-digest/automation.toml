@@ -1,0 +1,11 @@
+version = 1
+id = "weekly-engineering-director-digest"
+kind = "cron"
+name = "Weekly Engineering Director Digest"
+prompt = "Produce one compact end-of-week engineering digest for the registered repositories under /Users/cieranwong/repos. Ignore /Users/cieranwong/repos/CAMDAR completely unless the user explicitly asks about it in a future task. Keep the run read-only: do not edit files, install dependencies, run builds or test suites, create commits or tags, fetch, pull, push, deploy, delete, or mutate repositories or configuration. Start with low-cost signals only: the logical registry and local path map in /Users/cieranwong/repos/solo-dev-core/registry, local Git status and recent local history, docs/PROJECT.md when present, and already-available GitHub CLI status. Do not use network access when it is unavailable. Deep-inspect no more than five repositories, selected only for dirty or ahead branches, failed CI or open-PR blockers, stale project memory, security or environment risk, deployment blockers, or stale critical exports and backups. Stop once five actionable findings are supported. Output no more than 300 words and use no tables. Include at most five one-sentence bullets under Top actions and at most three one-sentence bullets under Watchlist. Every bullet must name the repository, the evidence-backed issue, and one safe next action. Omit clean repositories, routine status, repeated background, and categories with no findings. If nothing materially needs attention, output exactly: No material engineering action needed this week."
+status = "ACTIVE"
+rrule = "FREQ=WEEKLY;BYDAY=FR;BYHOUR=17;BYMINUTE=0;BYSECOND=0"
+model = "gpt-5.6-sol"
+reasoning_effort = "medium"
+execution_environment = "local"
+cwds = ["/Users/cieranwong/repos/solo-dev-core"]

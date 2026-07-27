@@ -257,7 +257,8 @@ Local activation evidence:
 - `~/.codex/AGENTS.md` links to this checkout's `global/AGENTS.md`;
 - all 22 current skills link from `~/.agents/skills` to this checkout and are visible in a fresh Codex task;
 - the personal `solo-dev-core` marketplace plugin is not installed, so there is no duplicate skill source;
-- all 18 checked-in report-only automations are active and match their live Codex definitions;
+- the single checked-in weekly Engineering Director digest is active and matches
+  its live Codex definition; the superseded 18-job suite has been removed;
 - `registry/paths.local.json` maps and validates all 14 registered local repositories.
 
 ## Non-goals and deferred work

@@ -11,36 +11,16 @@ The checked-in `cwds` record that live anchor, not the full prompt scan scope.
 
 ## Active Set
 
-- `weekly-semver-audit`: release/versioning radar across `/Users/cieranwong/repos`.
-- `weekly-repo-triage`: dirty repo, stale branch, upstream, and worktree attention digest.
-- `solo-dev-core-sync-guard`: parity check for this repo, live plugin source, installed cache, global instructions, and automation specs.
-- `cincaria-workflow-drift`: Cincaria reusable workflow/template drift radar.
-- `cincaria-deployment-readiness`: Cincaria app deployment-readiness digest.
-- `hrdcs-report-handoff`: HRDCS Finance/HR handoff sentinel for report artifacts and logs.
-- `signal-shelf-local-ops`: local-first Signal Shelf readiness and scheduler brief.
-- `agents-coverage-audit`: repo-level `AGENTS.md` coverage and freshness audit.
-- `docs-artifact-export-reminder`: docs/report export reminder for changed canonical artifacts.
-- `personal-project-archive-radar`: archive/ignore recommendations for low-signal personal repos.
-- `automation-health-check`: live-vs-source automation parity and schedule overlap report.
-- `open-pr-and-ci-failure-digest`: GitHub PR, CI, and stale review branch digest.
-- `local-secret-and-env-drift-audit`: local secret/env/example/gitignore drift audit.
-- `large-and-generated-file-radar`: large, generated, cache, export, and database file radar.
-- `dependency-refresh-radar`: Python/Node/Java/Docker dependency refresh report.
-- `new-repo-onboarding-detector`: new or under-onboarded repo detector.
-- `todo-fixme-debt-digest`: TODO/FIXME/HACK debt digest.
-- `backup-and-export-freshness-reminder`: backup/export/artifact freshness reminder.
+`weekly-engineering-director-digest` is the only shared engineering automation.
+It runs late Friday. A two-run trial through 2026-08-10 uses `gpt-5.6-sol` with
+medium reasoning while retaining strict investigation and output caps. The run
+starts with inexpensive portfolio signals, deep-inspects no more than five
+repositories, stops after five supported actions, and emits at most 300 words.
+A quiet week produces one sentence.
 
-## Midnight Schedule
-
-All schedules run at local midnight and use high reasoning by default.
-
-| Day | Automations |
-| --- | --- |
-| Monday | `automation-health-check`, `weekly-repo-triage`, `solo-dev-core-sync-guard`, `open-pr-and-ci-failure-digest` |
-| Tuesday | `weekly-semver-audit`, `local-secret-and-env-drift-audit`, `new-repo-onboarding-detector`, `agents-coverage-audit` monthly |
-| Wednesday | `cincaria-workflow-drift`, `cincaria-deployment-readiness`, `dependency-refresh-radar` monthly |
-| Thursday | `large-and-generated-file-radar`, `todo-fixme-debt-digest`, `personal-project-archive-radar` monthly |
-| Friday | `hrdcs-report-handoff`, `docs-artifact-export-reminder`, `backup-and-export-freshness-reminder`, `signal-shelf-local-ops` |
+Specialized audits remain available as manual Codex requests. They are not
+scheduled independently because the repeated reports cost more attention and
+tokens than they return.
 
 ## Change Policy
 
