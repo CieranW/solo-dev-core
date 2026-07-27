@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Status"
+  short_description: "Reconcile project records with repository evidence"
+  default_prompt: "Use $project-status to reconstruct and update this repository status."

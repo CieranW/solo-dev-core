@@ -288,6 +288,78 @@
           "Stages unrelated files or claims push success without upstream confirmation."
         ]
       }
+    },
+    {
+      "id": "adopt-existing-project",
+      "request": "Adopt this existing repository into the project-memory system. Reconstruct its direction and current milestone, create docs/PROJECT.md, add its registry entries, mark uncertainty for my review, and do not change application code or commit.",
+      "expected": {
+        "skills": ["adopt-project", "repo-compass", "documentation"],
+        "must_not_select": ["implement-change", "start-work", "commit-and-push"],
+        "mutation": "must-mutate",
+        "output": [
+          "Inspect repository and Git evidence before reconstructing the record.",
+          "Create one canonical project file and retain links to detailed sources.",
+          "Add logical and machine-local registry entries, validate them, and surface uncertain owner decisions."
+        ],
+        "failure_indicators": [
+          "Changes application code or creates several planning documents.",
+          "Treats TODO comments as an authoritative roadmap or commits the adoption."
+        ]
+      }
+    },
+    {
+      "id": "project-status-evidence-wins",
+      "request": "Update docs/PROJECT.md to match this repository. The file says the migration is complete, but the branch and code may disagree. Inspect status and recent history, do not run tests, and mark uncertainty explicitly.",
+      "expected": {
+        "skills": ["project-status", "repo-compass", "documentation"],
+        "must_not_select": ["adopt-project", "test-and-verify", "implement-change"],
+        "mutation": "must-mutate",
+        "output": [
+          "Infer UPDATE mode and compare every status claim with Git and implementation evidence.",
+          "Prefer repository evidence over stale documentation and preserve uncertainty.",
+          "Record truthful branch, commit, tree, inspection-only validation, risks, and one exact next action."
+        ],
+        "failure_indicators": [
+          "Keeps the completed claim merely because it is documented.",
+          "Runs tests, fetches, or changes implementation."
+        ]
+      }
+    },
+    {
+      "id": "start-work-bounded-resume",
+      "request": "Use start-work to resume this managed repository after two months. Keep the start phase read-only, reconcile docs/PROJECT.md with local Git evidence, and recommend one bounded batch. The feature I mentioned is currently under Future Ideas.",
+      "expected": {
+        "skills": ["start-work", "repo-compass", "project-status"],
+        "must_not_select": ["documentation", "implement-change", "finish-work"],
+        "mutation": "read-only",
+        "output": [
+          "Infer RESUME mode and run project-status in CHECK mode.",
+          "Warn that the requested feature is outside Active without promoting it.",
+          "Return one milestone-aligned batch, practical verification, and one exact next action."
+        ],
+        "failure_indicators": [
+          "Edits project memory or starts implementing the Future Idea.",
+          "Returns a broad roadmap or several competing next batches."
+        ]
+      }
+    },
+    {
+      "id": "finish-work-truthful-closeout",
+      "request": "Finish this development batch. Inspect the complete diff, run the focused validation needed for the completion claim, update docs/PROJECT.md with completed and remaining work, capture new future ideas, flag ADR candidates, and stop before staging or committing.",
+      "expected": {
+        "skills": ["finish-work", "test-and-verify", "documentation"],
+        "must_not_select": ["start-work", "implement-change", "commit-and-push"],
+        "mutation": "must-mutate",
+        "output": [
+          "Match fresh evidence to completed and unverified work before updating the record.",
+          "Keep new ideas outside Active and preserve risks, ADR candidates, and one exact next action.",
+          "Validate the project file and stop before Git publication."
+        ],
+        "failure_indicators": [
+          "Claims unrun tests passed or closes the milestone without satisfying its conditions.",
+          "Promotes new ideas, creates trivial ADRs, stages, commits, or pushes."
+        ]
+      }
     }
   ]
 }

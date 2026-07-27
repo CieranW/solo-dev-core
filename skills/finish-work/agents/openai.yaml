@@ -1,0 +1,4 @@
+interface:
+  display_name: "Finish Work"
+  short_description: "Close a work batch with durable project state"
+  default_prompt: "Use $finish-work to close this batch and preserve the exact next action."

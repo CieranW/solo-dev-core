@@ -18,6 +18,10 @@ There is no mandatory do-everything chain.
 
 | Need | Skill | Boundary |
 | --- | --- | --- |
+| Adopt an existing repository into project memory | `adopt-project` | Creates the canonical project record and registry entries without application changes |
+| Reconcile project records with repository evidence | `project-status` | Checks read-only or updates project documentation only |
+| Resume one bounded batch from durable project state | `start-work` | Produces one in-scope next action before implementation |
+| Close a batch and preserve truthful continuity | `finish-work` | Updates project memory and stops before Git publication |
 | Orient in a repository or resume interrupted work | `repo-compass` | Produces a compact evidence-labelled brief |
 | Resolve material ambiguity or compare implementation options | `clarify-intent` | Stops at a plan unless implementation was requested |
 | Shrink an oversized idea to one testable milestone | `solo-dev-scope` | Does not implement |
@@ -36,6 +40,9 @@ There is no mandatory do-everything chain.
 
 ## Composition examples
 
+- Existing repository adoption: `adopt-project` → `repo-compass` → conditional `solo-dev-scope` or `clarify-intent` → `documentation`.
+- Managed repository resumption: `start-work` → `repo-compass` → `project-status`; only an authorized in-scope batch continues to `implement-change`.
+- Batch closeout: `finish-work` → conditional `test-and-verify` → `documentation`; Git publication remains separate.
 - Unfamiliar decision-ready feature: `repo-compass` → `implement-change` → `test-and-verify`.
 - Ambiguous feature: `clarify-intent` → `implement-change` → `test-and-verify`.
 - Oversized product idea: `solo-dev-scope` → `clarify-intent`; implementation remains conditional.
@@ -49,6 +56,10 @@ Skip any step whose trigger is not present.
 
 ## Example invocations
 
+- `Use $adopt-project to reconstruct this repository into docs/PROJECT.md without changing application code.`
+- `Use $project-status to reconcile docs/PROJECT.md with the current branch and working tree.`
+- `Use $start-work to resume this repository and identify one bounded in-scope batch.`
+- `Use $finish-work to close this batch, update project memory, and preserve one exact next action.`
 - `Use $repo-compass to resume this repository and identify the exact next action.`
 - `Use $clarify-intent to compare the credible options and return a decision-complete plan only.`
 - `Use $profile-performance to reproduce this latency regression and locate the bottleneck without optimizing it.`
@@ -170,6 +181,8 @@ ADRs, the logical registry, and machine-local path mappings.
 
 ## Decisions
 
+- `docs/PROJECT.md` is the only routine project-memory record; adoption, status, start, and finish workflows keep its responsibilities distinct.
+- Start-work remains read-only, while project-status owns explicit record reconciliation and finish-work owns batch closeout.
 - `clarify-intent` owns design-option comparison; no `design-first` skill.
 - `review-changes` remains a bounded-diff defect review.
 - Performance, simplification, architecture assessment, and decision-ready implementation have distinct skills because their evidence and stop conditions differ.

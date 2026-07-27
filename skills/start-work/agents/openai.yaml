@@ -1,0 +1,4 @@
+interface:
+  display_name: "Start Work"
+  short_description: "Resume one bounded project work batch safely"
+  default_prompt: "Use $start-work to resume this repository with one exact next batch."
