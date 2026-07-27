@@ -152,7 +152,16 @@ optional and never fetches, so ahead counts reflect only local upstream refs.
 ## Cross-machine installation
 
 Clone this repository on each macOS or Linux machine, inspect the checkout, and
-run the idempotent installer:
+run the idempotent installer. This is the preferred personal installation mode.
+Do not also enable the `solo-dev-core` marketplace plugin on the same machine:
+both sources expose the same skill names and Codex will discover duplicates.
+Remove a legacy plugin installation before starting a fresh task:
+
+```bash
+codex plugin remove solo-dev-core@personal
+```
+
+Then install the direct-checkout links:
 
 ```bash
 git clone git@github.com:CieranW/solo-dev-core.git
@@ -191,7 +200,14 @@ the installer exits without changes on unsupported operating systems.
 
 This Git repository is the portable source. Personal marketplace registration, its configured source path, installed caches, live global instructions, local project paths, and enabled automations are machine-local and are not tracked here.
 
-On a new machine, prefer pointing the personal marketplace directly at a reviewed checkout of this repository. An existing machine may retain a separate local plugin source for compatibility, but that copy must be deliberately reconciled to the intended Git revision before reinstalling; changing this repository alone does not update it.
+Marketplace installation is an alternative packaging path for machines that do
+not use the direct-checkout installer. Do not enable both modes together.
+
+When using the plugin path, prefer pointing the personal marketplace directly
+at a reviewed checkout of this repository. An existing machine may retain a
+separate local plugin source for compatibility, but that copy must be
+deliberately reconciled to the intended Git revision before reinstalling;
+changing this repository alone does not update it.
 
 After the configured marketplace source contains the intended cachebuster version:
 
