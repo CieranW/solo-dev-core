@@ -68,6 +68,41 @@ cp global/AGENTS.md ~/.codex/AGENTS.md
 
 The copy is deliberate and is not performed by repository validation. Repository-specific commands, architecture, environment setup, and deployment facts must remain in that repository's `AGENTS.md`.
 
+## Project memory contracts
+
+The project-memory foundation keeps detailed state in the repository that owns
+it. A managed repository uses one concise `docs/PROJECT.md`, based on
+`templates/PROJECT.md`, plus optional durable decisions under
+`docs/decisions/` using `templates/ADR.md`.
+
+Validate a managed repository without modifying it:
+
+```bash
+scripts/project-memory validate-project --repo /path/to/repository
+```
+
+The project file must retain the template's 13 ordered sections. Future Ideas
+use `FI-YYYYMMDD-short-title` identifiers and must record value, dependencies, a
+concrete reconsideration trigger, the reason for deferral, related context, and
+the capture date. ADR filenames use `ADR-YYYYMMDD-short-title.md`.
+
+`registry/projects.json` is the committed logical registry. It stores only a
+project ID, display name, and canonical remote in `host/owner/repository` form.
+Machine-specific absolute paths belong in the ignored
+`registry/paths.local.json`; start from
+`registry/paths.local.example.json`.
+
+Validate the logical registry alone or together with a local mapping:
+
+```bash
+scripts/project-memory validate-registry
+scripts/project-memory validate-registry --paths registry/paths.local.example.json
+```
+
+Successful commands print a summary and exit zero. Schema, identifier, ADR, or
+mapping errors are written to standard error and exit nonzero. The validator is
+read-only and uses only the Python standard library.
+
 ## Plugin installation and refresh
 
 The local personal marketplace must point at the machine's `solo-dev-core` source copy. Marketplace configuration is machine-local and is not tracked here.
@@ -122,11 +157,16 @@ No package install is required for repository validation:
 
 ```bash
 scripts/validate-skills --strict-overlap
+scripts/project-memory validate-registry
 python3 -m unittest discover -s tests -p 'test_*.py'
 git diff --check
 ```
 
-`scripts/validate-skills` uses the Python standard library. It validates skill contracts, frontmatter, UI metadata, README coverage, cross-skill references, evaluation routing and mutation schema, and description overlap.
+Both validation scripts use the Python standard library. `scripts/validate-skills`
+validates skill contracts, frontmatter, UI metadata, README coverage,
+cross-skill references, evaluation routing and mutation schema, and description
+overlap. `scripts/project-memory` validates project-memory documents, optional
+ADRs, the logical registry, and machine-local path mappings.
 
 ## Decisions
 
