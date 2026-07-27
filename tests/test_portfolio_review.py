@@ -116,6 +116,15 @@ class PortfolioReviewTests(unittest.TestCase):
         self.assertEqual(report["summary"]["unavailable"], 2)
         self.assertEqual(report["projects"][0]["availability"], "missing")
         self.assertEqual(report["projects"][1]["availability"], "unmapped")
+        self.assertEqual(
+            report["projects"][0]["recommended_action"],
+            f"Restore or correct the local path mapping for alpha: "
+            f"{root / 'not-cloned'}.",
+        )
+        self.assertEqual(
+            report["next_action"], report["projects"][0]["recommended_action"]
+        )
+        self.assertIn("No repository", report["read_only_confirmation"])
 
     def test_project_memory_drives_stale_and_trigger_flags(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -148,6 +157,11 @@ class PortfolioReviewTests(unittest.TestCase):
             project["next_action"], "Measure the largest representative import."
         )
         self.assertEqual(project["risks"], ["Risk: Import latency remains unmeasured."])
+        self.assertIn("project-risk", project["flags"])
+        self.assertEqual(
+            report["next_action"],
+            "Reconcile alpha project memory with project-status.",
+        )
 
     def test_optional_git_inspection_reports_dirty_and_locally_ahead(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -191,6 +205,26 @@ class PortfolioReviewTests(unittest.TestCase):
         self.assertEqual(project["git"]["ahead"], 1)
         self.assertIn("dirty-working-tree", project["flags"])
         self.assertIn("local-branch-ahead", project["flags"])
+        self.assertEqual(
+            json.loads(result.stdout)["next_action"],
+            "Inspect and resolve the alpha working tree before portfolio planning.",
+        )
+
+    def test_text_output_includes_exact_action_and_read_only_confirmation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            registry = self.write_registry(root, [])
+            result = self.run_reviewer("--registry", str(registry))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(
+            "Exact portfolio next action: Adopt or register one project",
+            result.stdout,
+        )
+        self.assertIn(
+            "Read-only confirmation: no repository, registry, Git state, "
+            "commit, or remote was changed.",
+            result.stdout,
+        )
 
     def test_invalid_mapping_stops_without_traceback(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

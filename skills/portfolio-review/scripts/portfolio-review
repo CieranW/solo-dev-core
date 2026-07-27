@@ -271,16 +271,25 @@ def review_project(
         "next_action": None,
         "future_ideas": [],
         "git": {"inspected": False},
+        "recommended_action": None,
         "flags": [],
         "errors": [],
     }
     if raw_path is None:
         record["flags"].append("unavailable-unmapped")
+        record["recommended_action"] = (
+            f"Add a local path mapping or clone {project['remote']} for "
+            f"{project['id']}."
+        )
         return record
     repo = Path(raw_path)
     if not repo.is_dir():
         record["availability"] = "missing"
         record["flags"].append("unavailable-missing-path")
+        record["recommended_action"] = (
+            f"Restore or correct the local path mapping for {project['id']}: "
+            f"{raw_path}."
+        )
         return record
     record["availability"] = "available"
     project_path = repo / "docs" / "PROJECT.md"
@@ -289,10 +298,17 @@ def review_project(
     except FileNotFoundError:
         record["project_file"] = "missing"
         record["flags"].append("missing-project-file")
+        record["recommended_action"] = (
+            f"Adopt {project['id']} at {repo} to create docs/PROJECT.md."
+        )
     except (OSError, UnicodeError) as exc:
         record["project_file"] = "invalid"
         record["errors"].append(f"cannot read docs/PROJECT.md: {exc}")
         record["flags"].append("invalid-project-file")
+        record["recommended_action"] = (
+            f"Inspect and repair project memory for {project['id']} at "
+            f"{project_path}."
+        )
     else:
         sections = parse_sections(content)
         required = {
@@ -306,6 +322,10 @@ def review_project(
             record["project_file"] = "invalid"
             record["errors"].append("missing sections: " + ", ".join(missing))
             record["flags"].append("invalid-project-file")
+            record["recommended_action"] = (
+                f"Reconcile malformed project memory for {project['id']} at "
+                f"{project_path}."
+            )
         else:
             section_fields = {
                 section: parse_fields(sections[section])
@@ -322,6 +342,10 @@ def review_project(
                     "missing fields: " + ", ".join(missing_fields)
                 )
                 record["flags"].append("invalid-project-file")
+                record["recommended_action"] = (
+                    f"Reconcile malformed project memory for {project['id']} at "
+                    f"{project_path}."
+                )
             else:
                 record["project_file"] = "ok"
             milestone = section_fields["Current Milestone"]
@@ -353,6 +377,8 @@ def review_project(
             if age_days is not None and age_days < 0:
                 record["flags"].append("future-last-verified")
             record["risks"] = parse_risks(sections["Risks and Unknowns"])
+            if record["risks"]:
+                record["flags"].append("project-risk")
             record["next_action"] = section_fields["Exact Next Action"].get("Action")
             record["future_ideas"] = parse_future_ideas(
                 sections.get("Future Ideas", ""), as_of
@@ -369,6 +395,74 @@ def review_project(
         if git.get("error"):
             record["flags"].append("git-inspection-error")
     return record
+
+
+def select_next_action(projects: list[dict[str, Any]]) -> str:
+    if not projects:
+        return "Adopt or register one project before the next portfolio review."
+
+    priorities = (
+        "unavailable-missing-path",
+        "unavailable-unmapped",
+        "missing-project-file",
+        "invalid-project-file",
+        "blocked-milestone",
+        "missing-current-milestone",
+        "uncertain-milestone",
+        "dirty-working-tree",
+        "local-branch-ahead",
+        "stale-project-file",
+        "invalid-last-verified",
+        "project-risk",
+        "future-trigger-candidate",
+    )
+    for flag in priorities:
+        for project in projects:
+            if flag not in project["flags"]:
+                continue
+            if project["recommended_action"]:
+                return project["recommended_action"]
+            if flag in {
+                "blocked-milestone",
+                "missing-current-milestone",
+                "uncertain-milestone",
+                "stale-project-file",
+                "invalid-last-verified",
+            }:
+                return (
+                    f"Reconcile {project['id']} project memory with "
+                    "project-status."
+                )
+            if flag == "dirty-working-tree":
+                return (
+                    f"Inspect and resolve the {project['id']} working tree "
+                    "before portfolio planning."
+                )
+            if flag == "local-branch-ahead":
+                return (
+                    f"Review {project['id']}'s local-ahead commits and decide "
+                    "whether to publish them."
+                )
+            if flag == "project-risk":
+                return (
+                    f"Review the highest-priority {project['id']} risk: "
+                    f"{project['risks'][0]}"
+                )
+            if flag == "future-trigger-candidate":
+                idea = next(
+                    idea
+                    for idea in project["future_ideas"]
+                    if idea["signal"] is not None
+                )
+                return (
+                    f"Review {project['id']} Future Idea {idea['id']} with "
+                    "roadmap-review."
+                )
+
+    return (
+        f"Resume {projects[0]['id']} from its recorded exact next action: "
+        f"{projects[0]['next_action'] or 'reconcile its project record first'}"
+    )
 
 
 def summarize(projects: list[dict[str, Any]]) -> dict[str, int]:
@@ -420,6 +514,8 @@ def render_text(report: dict[str, Any]) -> str:
         )
         if project["next_action"]:
             lines.append(f"  next: {project['next_action']}")
+        if project["recommended_action"]:
+            lines.append(f"  portfolio action: {project['recommended_action']}")
         for risk in project["risks"]:
             lines.append(f"  risk: {risk}")
         git = project["git"]
@@ -436,6 +532,13 @@ def render_text(report: dict[str, Any]) -> str:
                 lines.append(
                     f"  trigger: {idea['id']} ({idea['signal']}): {idea['trigger']}"
                 )
+    lines.extend(
+        [
+            f"Exact portfolio next action: {report['next_action']}",
+            "Read-only confirmation: no repository, registry, Git state, "
+            "commit, or remote was changed.",
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -493,6 +596,10 @@ def main() -> int:
         "stale_after_days": args.stale_after_days,
         "summary": summarize(reviewed),
         "projects": reviewed,
+        "next_action": select_next_action(reviewed),
+        "read_only_confirmation": (
+            "No repository, registry, Git state, commit, or remote was changed."
+        ),
     }
     if args.format == "json":
         print(json.dumps(report, indent=2, sort_keys=True))
