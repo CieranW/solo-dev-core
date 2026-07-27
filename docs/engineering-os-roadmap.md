@@ -1,10 +1,11 @@
 # Engineering OS Architecture and Roadmap
 
 - Date: 2026-07-27
-- Status: Milestone 1 source-validated; live-plugin pickup pending
+- Status: Milestone 1 implemented; direct-link installation validated, fresh-task deduplication pending
 - Owner/context: `solo-dev-core` maintainer
 - Decision: Extend the existing skill system with one opt-in coordinator instead of a mandatory workflow chain
-- Exact next action: Validate the source, reconcile the configured marketplace source to this Git revision, reinstall the plugin, and forward-test the new routing in a fresh Codex task
+- Installation decision: Use direct-checkout skill and global-instruction links for personal machines; retain marketplace packaging as an alternative, not a simultaneous installation
+- Exact next action: Remove the redundant `solo-dev-core@personal` installation, start a fresh Codex task, and confirm single-source skill discovery plus coordinator routing
 
 ## Original state
 
@@ -199,10 +200,15 @@ The core must work without automations, subagents, a project registry, or projec
 
 ### Next milestone
 
-- Reconcile the Git source, configured marketplace source, installed cache, and live global instructions on one machine.
-- Smoke-test the skills-only installed payload for project adoption and validation.
-- Forward-test the new coordinator after reinstall in a fresh Codex task.
+- Remove the redundant local marketplace plugin now that direct-checkout links are active.
+- Confirm single-source skill discovery and forward-test the coordinator in a fresh Codex task.
 - Use the results to tighten triggers or examples before adding capability.
+
+Completed activation work:
+
+- Added and tested an idempotent macOS/Linux installer for 23 direct skill links and global instructions.
+- Validated the live links, complete test suite, strict skill checks, project registry, and installed global guidance.
+- Documented direct links and marketplace plugins as alternative installation modes.
 
 ### Later milestones
 
