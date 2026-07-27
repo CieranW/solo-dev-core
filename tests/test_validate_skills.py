@@ -28,10 +28,16 @@ class ValidateSkillsTests(unittest.TestCase):
         description: str = "Use when focused alpha behavior needs careful handling.",
     ) -> None:
         skill_dir = root / "skills" / name
-        (skill_dir / "agents").mkdir(parents=True)
+        (skill_dir / "agents").mkdir(parents=True, exist_ok=True)
         (skill_dir / "SKILL.md").write_text(
             f"---\nname: {name}\ndescription: {description}\n---\n\n"
-            f"# {name.replace('-', ' ').title()}\n"
+            f"# {name.replace('-', ' ').title()}\n\n"
+            "## Boundaries\n\nUse for the named fixture behavior.\n\n"
+            "## Workflow\n\n1. Inspect the fixture.\n\n"
+            "## Evidence\n\nReport the inspected fixture.\n\n"
+            "## Output Contract\n\nReturn the fixture result.\n\n"
+            "## Stop Conditions\n\nStop after the result.\n\n"
+            "## Composition\n\nDo not invoke unrelated fixture skills.\n"
         )
         (skill_dir / "agents" / "openai.yaml").write_text(
             "interface:\n"
@@ -49,23 +55,44 @@ class ValidateSkillsTests(unittest.TestCase):
             json.dumps({"name": "fixture", "version": "1.0.0", "skills": "./skills/"})
         )
         self.add_skill(root, "alpha-skill")
+        self.add_skill(
+            root,
+            "beta-skill",
+            "Use when bounded beta release evidence must be selected.",
+        )
         (root / "README.md").write_text(
-            "# Fixture\n\n## Skills\n\n- `alpha-skill`: fixture skill.\n\n## End\n"
+            "# Fixture\n\n## Skills\n\n"
+            "- `alpha-skill`: fixture skill.\n"
+            "- `beta-skill`: second fixture skill.\n\n"
+            "## End\n"
         )
         (root / "evals" / "scenarios.json").write_text(
             json.dumps(
                 {
-                    "version": 1,
+                    "version": 2,
                     "scenarios": [
                         {
                             "id": "alpha-basic",
-                            "skill": "alpha-skill",
                             "request": "Handle the alpha case.",
                             "expected": {
-                                "must": ["Follow the alpha workflow."],
-                                "must_not": ["Mutate unrelated state."],
+                                "skills": ["alpha-skill"],
+                                "must_not_select": ["beta-skill"],
+                                "mutation": "read-only",
+                                "output": ["Follow the alpha workflow."],
+                                "failure_indicators": ["Mutate unrelated state."],
                             },
-                        }
+                        },
+                        {
+                            "id": "beta-basic",
+                            "request": "Handle the beta case.",
+                            "expected": {
+                                "skills": ["beta-skill"],
+                                "must_not_select": ["alpha-skill"],
+                                "mutation": "read-only",
+                                "output": ["Follow the beta workflow."],
+                                "failure_indicators": ["Mutate unrelated state."],
+                            },
+                        },
                     ],
                 }
             )
@@ -115,11 +142,11 @@ class ValidateSkillsTests(unittest.TestCase):
             root = Path(directory)
             scenarios_path = root / "evals" / "scenarios.json"
             scenarios = json.loads(scenarios_path.read_text())
-            scenarios["scenarios"][0]["skill"] = ["alpha-skill"]
+            scenarios["scenarios"][0]["expected"]["skills"] = ["missing-skill"]
             scenarios_path.write_text(json.dumps(scenarios))
             result = self.run_validator(root)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("skill must name an existing skill", result.stderr)
+        self.assertIn("expected.skills names unknown skills", result.stderr)
         self.assertNotIn("Traceback", result.stderr)
 
     def test_invalid_single_quoted_yaml_scalar_fails(self) -> None:
@@ -186,29 +213,104 @@ class ValidateSkillsTests(unittest.TestCase):
             root = Path(directory)
             description = "Use when focused alpha behavior needs careful handling."
             self.add_skill(root, "beta-skill", description)
-            readme = root / "README.md"
-            readme.write_text(
-                readme.read_text().replace(
-                    "\n## End", "\n- `beta-skill`: fixture skill.\n\n## End"
-                )
-            )
-            scenarios_path = root / "evals" / "scenarios.json"
-            scenarios = json.loads(scenarios_path.read_text())
-            scenarios["scenarios"].append(
-                {
-                    "id": "beta-basic",
-                    "skill": "beta-skill",
-                    "request": "Handle the beta case.",
-                    "expected": {
-                        "must": ["Follow the beta workflow."],
-                        "must_not": ["Mutate unrelated state."],
-                    },
-                }
-            )
-            scenarios_path.write_text(json.dumps(scenarios))
             result = self.run_validator(root)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("[WARN] description overlap 1.00", result.stdout)
+
+    def test_missing_required_skill_section_fails(self) -> None:
+        with self.make_fixture() as directory:
+            root = Path(directory)
+            skill = root / "skills" / "alpha-skill" / "SKILL.md"
+            skill.write_text(skill.read_text().replace("## Evidence", "## Proof"))
+            result = self.run_validator(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("missing required sections: ## Evidence", result.stderr)
+
+    def test_empty_required_skill_section_fails(self) -> None:
+        with self.make_fixture() as directory:
+            root = Path(directory)
+            skill = root / "skills" / "alpha-skill" / "SKILL.md"
+            skill.write_text(
+                skill.read_text().replace(
+                    "## Evidence\n\nReport the inspected fixture.",
+                    "## Evidence\n",
+                )
+            )
+            result = self.run_validator(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("empty required section: ## Evidence", result.stderr)
+
+    def test_duplicate_required_skill_section_fails(self) -> None:
+        with self.make_fixture() as directory:
+            root = Path(directory)
+            skill = root / "skills" / "alpha-skill" / "SKILL.md"
+            skill.write_text(
+                skill.read_text() + "\n## Evidence\n\nDuplicate evidence contract.\n"
+            )
+            result = self.run_validator(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("duplicate required section: ## Evidence", result.stderr)
+
+    def test_readme_ignores_backticked_boundary_terms(self) -> None:
+        with self.make_fixture() as directory:
+            root = Path(directory)
+            readme = root / "README.md"
+            readme.write_text(
+                readme.read_text().replace(
+                    "- `alpha-skill`: fixture skill.",
+                    "- `alpha-skill`: fixture skill with a `read-only` boundary.",
+                )
+            )
+            result = self.run_validator(root)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_unresolved_skill_placeholder_fails(self) -> None:
+        with self.make_fixture() as directory:
+            root = Path(directory)
+            skill = root / "skills" / "alpha-skill" / "SKILL.md"
+            skill.write_text(skill.read_text() + "\n[TODO: replace this]\n")
+            result = self.run_validator(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("contains an unresolved TODO placeholder", result.stderr)
+
+    def test_invalid_eval_mutation_policy_fails(self) -> None:
+        with self.make_fixture() as directory:
+            root = Path(directory)
+            scenarios_path = root / "evals" / "scenarios.json"
+            scenarios = json.loads(scenarios_path.read_text())
+            scenarios["scenarios"][0]["expected"]["mutation"] = "sometimes"
+            scenarios_path.write_text(json.dumps(scenarios))
+            result = self.run_validator(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("expected.mutation must be one of", result.stderr)
+
+    def test_selected_and_forbidden_skill_fails(self) -> None:
+        with self.make_fixture() as directory:
+            root = Path(directory)
+            scenarios_path = root / "evals" / "scenarios.json"
+            scenarios = json.loads(scenarios_path.read_text())
+            scenarios["scenarios"][0]["expected"]["must_not_select"] = [
+                "alpha-skill"
+            ]
+            scenarios_path.write_text(json.dumps(scenarios))
+            result = self.run_validator(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("skills cannot be both selected and forbidden", result.stderr)
+
+    def test_unknown_eval_fields_fail(self) -> None:
+        with self.make_fixture() as directory:
+            root = Path(directory)
+            scenarios_path = root / "evals" / "scenarios.json"
+            scenarios = json.loads(scenarios_path.read_text())
+            scenarios["legacy"] = True
+            scenarios["scenarios"][0]["skill"] = "alpha-skill"
+            scenarios["scenarios"][0]["expected"]["must"] = ["legacy wording"]
+            scenarios_path.write_text(json.dumps(scenarios))
+            result = self.run_validator(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unknown top-level fields: legacy", result.stderr)
+        self.assertIn("unknown scenario fields: skill", result.stderr)
+        self.assertIn("unknown expected fields: must", result.stderr)
 
 
 if __name__ == "__main__":

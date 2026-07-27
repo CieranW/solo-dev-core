@@ -7,6 +7,12 @@ description: Use for broad feature ideas, app/site/tool requests, product concep
 
 Use this skill to keep work valuable, small, and maintainable for one developer.
 
+## Boundaries
+
+- Use for broad product, feature, app, site, or tool ideas whose first increment is not yet safely bounded.
+- Do not use for a decision-ready implementation, a local bug, a bounded diff, or routine maintenance.
+- Keep the workflow read-only; it selects a milestone rather than implementing one.
+
 ## Workflow
 
 1. Identify the user's real outcome and the observable signal that would prove the idea is useful.
@@ -21,6 +27,13 @@ Use this skill to keep work valuable, small, and maintainable for one developer.
 10. Prefer boring, maintainable choices over expansive architecture.
 11. Write observable acceptance criteria, including a meaningful failure or recovery path when relevant.
 12. When implementation planning is requested, hand the narrowed milestone to `$clarify-intent` for a decision-complete plan.
+
+## Evidence
+
+- User outcome and observable proof signal identified.
+- Relevant time, budget, repository, product, and operational constraints inspected.
+- Effort ceiling, timebox, kill condition, non-goals, and revisit triggers stated.
+- Acceptance criteria cover one end-to-end workflow and a meaningful failure or recovery path.
 
 ## Output Contract
 
@@ -37,6 +50,18 @@ For scoped work, provide:
 - Acceptance criteria.
 - Operational burden accepted.
 - Key tradeoff chosen and why.
+
+## Stop Conditions
+
+- Stop once one testable end-to-end milestone fits the effort ceiling.
+- Stop and shrink again when the proposed milestone still contains several independent products or workflows.
+- Stop before implementation; planning continues through `$clarify-intent` only when requested.
+
+## Composition
+
+- Use `$repo-compass` first when repository or operating context is missing.
+- Hand the selected milestone to `$clarify-intent` for decision-complete planning.
+- Do not invoke implementation, review, verification, or shipping skills during scoping alone.
 
 ## Anti-Patterns
 

@@ -1,13 +1,19 @@
 ---
 name: test-and-verify
-description: Use before claiming work is complete, fixed, passing, ready, or shipped; map each claim to fresh reproducible evidence, capture relevant runtime context, handle flaky results explicitly, and separate verified facts from untested behavior and residual risk across reproductions, tests, builds, lint, typechecks, manual checks, or targeted commands.
+description: Use before claiming work is complete, fixed, passing, ready, or shipped, or whenever the user asks for evidence or verification; map each claim to fresh reproducible checks, capture relevant runtime context, handle flaky results explicitly, and separate verified facts from untested behavior and residual risk without issuing a shipping-readiness verdict.
 ---
 
 # Test And Verify
 
 Use this skill before making any claim that work is correct or complete.
 
-## Verification Gate
+## Boundaries
+
+- Use to gather fresh evidence for concrete behavior, correctness, build, lint, type, integration, or completion claims.
+- Do not use to review a diff for defects, decide release classification, or return a shipping-readiness verdict.
+- Keep verification non-mutating except for ordinary ephemeral test/build artifacts; do not change implementation merely to make a check pass unless a fix was separately requested.
+
+## Workflow
 
 Before any completion claim:
 
@@ -20,7 +26,7 @@ Before any completion claim:
 7. If code, config, fixtures, or generated output changes after a check, rerun every affected check.
 8. Report what passed, what failed, what was not run, and why.
 
-## Evidence Ladder
+## Evidence
 
 Prefer the narrowest evidence that proves the actual behavior:
 
@@ -52,6 +58,18 @@ Final status must include:
 - `Residual risk`: remaining uncertainty or follow-up risk.
 
 Never imply success from code changes alone.
+
+## Stop Conditions
+
+- Stop when the strongest practical claim-matched evidence has been gathered; do not run every repository check by default.
+- Stop and report when a check is destructive, privileged, unavailable, too costly, or requires missing credentials or services.
+- Stop treating the result as stable when the flaky-result protocol identifies inconsistent outcomes.
+
+## Composition
+
+- Receive claims from `$implement-change`, `$diagnose-problem`, `$profile-performance`, `$simplify-code`, `$dependency-maintenance`, or `$documentation`.
+- Provide evidence to `$ship-check`; do not duplicate its readiness decision.
+- Provide relevant verification to `$commit-and-push` without taking ownership of Git state.
 
 ## Anti-Patterns
 

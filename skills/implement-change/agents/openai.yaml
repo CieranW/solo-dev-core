@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement Change"
+  short_description: "Apply an approved change with narrow verification."
+  default_prompt: "Use $implement-change to apply this decision-ready change without broadening scope."

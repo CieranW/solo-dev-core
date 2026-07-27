@@ -1,11 +1,17 @@
 ---
 name: semantic-versioning
-description: Use when deciding, preparing, auditing, or applying semantic versions, and as the required pre-commit gate for commit-and-push; triggers for release, regular-versus-release commit decisions, bump version, tag, changelog, latest tag, version drift, package version, are we ready for v1, or what version should this be; recommends SemVer changes, updates version files and changelogs when justified, and requires approval before creating or pushing tags.
+description: Use when deciding, preparing, auditing, or applying semantic versions, and as the required pre-commit gate for commit-and-push; triggers when release classification or version state is at issue, including regular-versus-release decisions, bumps, tags, changelogs, latest tags, version drift, package versions, v1 milestones, or choosing the next version, but not for a general shipping-readiness verdict.
 ---
 
 # Semantic Versioning
 
 Use this skill to keep releases boring, traceable, and consistent across repos.
+
+## Boundaries
+
+- Use for REGULAR-versus-RELEASE decisions, version recommendations, version-file or changelog preparation, and tag operations.
+- Do not invoke standalone for general readiness, staged-diff review, ordinary branch publication, or deployment. The required pre-commit gate still applies when `$commit-and-push` invokes this skill.
+- Version and changelog mutation is allowed only for a supported release decision. Tag creation and tag push each require explicit approval.
 
 ## Default Policy
 
@@ -87,6 +93,13 @@ Only include sections that have entries.
 Do not document aspirational work as released.
 Reference notable commits, PRs, or issue numbers when visible.
 
+## Evidence
+
+- Repository version source, release convention, latest reachable tag, current branch, and relevant changes inspected.
+- Release boundary, package scope, compatibility impact, and SemVer classification supported by repository evidence.
+- Version and changelog diffs matched to actual changes.
+- Relevant verification and `$ship-check` verdict available before release-readiness claims.
+
 ## Output Contract
 
 For pre-commit decisions, report:
@@ -111,6 +124,19 @@ For prepared releases, report:
 - Release commit status.
 - Tag status: not created, created locally, or pushed.
 - Any blocker or residual risk.
+
+## Stop Conditions
+
+- Stop after a `REGULAR` gate decision without touching versions, changelogs, or tags.
+- Stop and ask when package scope, release target, or breaking-change impact would materially change the decision.
+- Stop before creating or pushing a tag without the corresponding explicit approval.
+
+## Composition
+
+- Act as the mandatory pre-commit gate when invoked by `$commit-and-push`.
+- Use `$ship-check` for a release-readiness verdict.
+- Hand release staging, commit, and normal branch push back to `$commit-and-push`.
+- Keep tag decisions and tag operations in this skill.
 
 ## Anti-Patterns
 

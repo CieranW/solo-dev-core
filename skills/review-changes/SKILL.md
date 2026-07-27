@@ -7,6 +7,12 @@ description: Use when the user asks for a code review, diff review, pull request
 
 Find defects and material risks before judging whether a change is ready to ship.
 
+## Boundaries
+
+- Use for a bounded code, configuration, commit, branch, or pull-request diff.
+- Do not use for broad architecture assessment, behavior-preserving simplification of existing code, implementation, or a shipping verdict.
+- Keep review read-only unless fixes are explicitly requested.
+
 ## Workflow
 
 1. Read applicable repository instructions and define the review boundary, comparison base, intended behavior, and requested risk focus.
@@ -34,6 +40,13 @@ A finding must be:
 
 Do not report formatting preferences, harmless naming differences, speculative architecture, or test requests without a concrete uncovered risk.
 
+## Evidence
+
+- Complete relevant diff and affected call sites inspected.
+- Each finding tied to a plausible triggering condition and actual code path.
+- Severity supported by realistic impact.
+- Verification gaps and residual risk stated when evidence is incomplete.
+
 ## Output Contract
 
 Return:
@@ -43,6 +56,19 @@ Return:
 - Verification gaps and residual risk.
 - A clear statement when no actionable findings were found.
 - An explicit statement that no fixes were applied unless the user requested them.
+
+## Stop Conditions
+
+- Stop after reporting all supported actionable findings; do not invent issues to fill the response.
+- Stop before mutation during review-only requests.
+- When fixes are authorized, hand them to `$implement-change` rather than weakening the review standard.
+
+## Composition
+
+- Use `$architecture-review` for system boundaries and structural design.
+- Use `$simplify-code` for behavior-preserving complexity reduction.
+- Hand authorized fixes to `$implement-change`, followed by `$test-and-verify`.
+- Use `$ship-check` separately when the reviewed change needs a readiness verdict.
 
 ## Anti-Patterns
 

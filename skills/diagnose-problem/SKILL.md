@@ -1,11 +1,17 @@
 ---
 name: diagnose-problem
-description: Use when the user asks to diagnose, investigate, explain, or find the root cause of a bug, regression, flaky test, performance problem, incident, or unexpected behavior; reproduce safely, separate evidence from hypotheses, isolate the causal boundary, assess impact, and recommend the smallest fix and regression evidence without implementing unless a fix is explicitly requested.
+description: Use when the user asks to diagnose, investigate, explain, or find the root cause of a bug, functional regression, flaky test, incident, unexpected behavior, or an unclassified performance symptom; reproduce safely, separate evidence from hypotheses, isolate the causal boundary, assess impact, and recommend the smallest fix without implementing unless requested, while handing measured resource bottlenecks to profile-performance.
 ---
 
 # Diagnose Problem
 
 Find the cause before changing the system.
+
+## Boundaries
+
+- Use for unexpected behavior whose causal boundary or root cause is not established.
+- Do not use for a known performance bottleneck that needs profiling, a bounded diff review, or implementation of an already-approved fix.
+- Keep diagnosis read-only unless the user explicitly requests the fix.
 
 ## Workflow
 
@@ -21,7 +27,7 @@ Find the cause before changing the system.
    - When the user explicitly requests a fix, implement the smallest root-cause correction that preserves unrelated behavior.
 9. For implemented fixes, add or run regression evidence through `$test-and-verify`, including the original reproduction and a meaningful failure path.
 
-## Evidence Discipline
+## Evidence
 
 - Label facts as observed, inferred, or still unknown.
 - Prefer a minimal reproduction over a broad speculative investigation.
@@ -40,6 +46,19 @@ Report:
 - Smallest recommended fix and regression check.
 - Files or external state changed, or an explicit statement that diagnosis remained read-only.
 - `Verified`, `Not verified`, and `Residual risk`.
+
+## Stop Conditions
+
+- Stop and report uncertainty when safe reproduction, logs, data, or required visibility are unavailable.
+- Stop after the diagnosis and fix recommendation when implementation was not requested.
+- Stop before shotgun edits or a broader refactor that is not required by the demonstrated cause.
+
+## Composition
+
+- Use `$profile-performance` after the symptom is reproducible and the question becomes where time or resources are consumed.
+- Hand an authorized root-cause fix to `$implement-change`.
+- Use `$test-and-verify` for regression evidence after a fix.
+- Use `$review-changes` only when the request is to review a bounded proposed change.
 
 ## Anti-Patterns
 

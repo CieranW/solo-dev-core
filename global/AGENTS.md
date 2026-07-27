@@ -2,16 +2,24 @@
 
 Keep this file lean. Put repo commands, architecture, env, and long runbooks in repo-level `AGENTS.md` files or docs.
 
-## Solo Dev Defaults
+## Lean Engineering Defaults
 
-- Work like a pragmatic solo-dev pair: shrink scope to the smallest valuable milestone, choose maintainable boring paths, and avoid platform-sized solutions.
-- Inspect local context before asking. Ask only when an answer changes scope, risk, or output; otherwise proceed with stated assumptions.
-- Preserve unrelated user work. Check git state before edits/commits and never revert changes the user may have made.
+- Make the smallest coherent change that satisfies the request. Do not broaden scope, perform unrelated cleanup, or hide material assumptions. State non-goals when work is likely to expand.
+- Inspect local context before asking. Ask only when an answer changes scope, risk, or output; otherwise proceed with explicit, reversible assumptions.
+- Preserve unrelated user work, existing behavior, and public interfaces unless the requirement calls for change. Check repository state before edits or Git operations.
+- Prefer editing existing code and deleting obsolete code over rewrites, compatibility layers, new modules, or new classes.
+- Use direct implementations. Do not introduce managers, factories, wrappers, registries, adapters, repositories, generic utilities, or speculative abstractions without demonstrated need.
+- Do not add fallbacks that hide real failures, broad exception handling, placeholders, dead branches, TODO implementations, or commented-out code.
+- Prefer the standard library and existing dependencies. Add a dependency only when it materially reduces complexity or risk; explain why, avoid unrelated updates, and preserve lockfile integrity.
+- Add or update the narrowest meaningful regression test. Run checks matched to the changed behavior, and report flaky, skipped, or unrelated failures instead of hiding them.
+- Measure before optimizing and identify the actual bottleneck. Avoid unnecessary copies, conversions, repeated model loading, unbounded buffering, blocking work, and accidental CPU/GPU transfers.
+- Keep one canonical source for each material fact. Document intent, constraints, interfaces, operations, and non-obvious decisions; do not narrate obvious code.
 - Prefer existing patterns, scripts, docs, and `rg`/`rg --files`.
+- Distinguish observed evidence from assumptions. Completion reports must separate `Verified`, `Not verified`, `Residual risk`, and genuine follow-up work.
 
 ## Skill Routing
 
-When available, use `solo-dev-core` skills by trigger: `clarify-intent` for fuzzy goals or decision-complete planning; `solo-dev-scope` for broad product ideas; `repo-compass` for new projects, unfamiliar repos, fresh-chat context recovery, handoffs, audits, and repo-specific `AGENTS.md` setup; `diagnose-problem` for root-cause investigation; `review-changes` for read-only code and diff review; `documentation` for docs/comments; `dependency-maintenance` for package, runtime, manifest, and lockfile updates; `test-and-verify` before completion claims; `ship-check` before commit, push, merge, deploy, release, or handoff readiness claims; `commit-and-push` for staging, commits, and pushes; `semantic-versioning` for release, version bump, changelog, tag, or SemVer audit work.
+Use only skills whose trigger matches; there is no mandatory chain. Route to `repo-compass` for orientation or resumption; `clarify-intent` for material ambiguity or option decisions; `solo-dev-scope` for oversized ideas; `diagnose-problem` for root causes; `profile-performance` for measured bottlenecks; `review-changes` for bounded diffs; `architecture-review` for structural assessment; `simplify-code` for behavior-preserving complexity reduction; `implement-change` for decision-ready code or configuration changes; `dependency-maintenance` for package and runtime changes; `documentation` for docs and comments; `test-and-verify` for fresh claim evidence; `ship-check` for an explicit readiness verdict; `semantic-versioning` for release classification, versions, changelogs, or tags; and `commit-and-push` for Git staging, commits, and branch pushes.
 
 ## New Project Bootstrap
 
@@ -23,7 +31,8 @@ Do not put project-specific commands in the global file.
 
 ## Workflows
 
-- Implementation: orient, state assumptions only when useful, edit narrowly, run relevant checks, then summarize changes and evidence.
+- Implementation: orient only when context is missing, resolve material ambiguity, apply the decision-ready change, and verify it. Review or shipping checks are conditional, not automatic.
+- Performance: reproduce the symptom, establish a representative baseline, profile the bottleneck, apply only evidence-backed changes, and compare under equivalent conditions.
 - Repo health/dependencies: inventory manifests and run the full practical verification surface when asked for "all checks."
 - Documentation: update the nearest canonical doc; include real commands, paths, expected outputs, and verified limits.
 - Git: stage deliberately by path, avoid `git add .` unless requested, verify first when behavior changed, and report branch/commit/remote.
@@ -32,7 +41,7 @@ Do not put project-specific commands in the global file.
 
 ## Final Reply
 
-Be concise. Lead with blockers or failures when present. For verification-heavy work, include `Verified`, `Not verified`, and `Residual risk`. Distinguish "ready to push this branch" from "ready to merge/main."
+Be concise. Lead with blockers or failures when present. Include `Verified`, `Not verified`, `Residual risk`, and follow-up only when relevant. Distinguish "ready to push this branch" from "ready to merge/main."
 
 ## Usage Footer
 

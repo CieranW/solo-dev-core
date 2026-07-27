@@ -7,6 +7,12 @@ description: Use when the user asks to commit, push, stage changes, save work to
 
 Use this skill when preparing, committing, or pushing Git changes.
 
+## Boundaries
+
+- Use for explicit staging, checkpoint, commit, or branch-push requests.
+- Do not use for implementation, general readiness review, deployment, or tag publication.
+- Mutate Git state only within the requested boundary. A commit request does not imply push, and a branch push does not authorize tag creation or force-push.
+
 ## Workflow
 
 1. Inspect repository state before changing Git state:
@@ -53,6 +59,13 @@ Before pushing:
 - Do not force-push unless the user explicitly asks and the risk is stated.
 - If push fails because the remote is ahead, stop and report the divergence; do not auto-rebase unless requested.
 
+## Evidence
+
+- Worktree, branch, upstream, user-owned changes, and complete relevant diff inspected.
+- `$semantic-versioning` returned a supported `REGULAR` or `RELEASE` decision before staging.
+- Exact staged paths, staged diff, whitespace check, secrets, generated files, and unexpected binaries reviewed.
+- Relevant verification read before commit and local/upstream refs confirmed after any push.
+
 ## Output Contract
 
 Final response must include:
@@ -65,6 +78,19 @@ Final response must include:
 - Push status or blocker.
 - SemVer gate decision (`RELEASE` or `REGULAR`) and concise evidence.
 - For `RELEASE`, the previous and next version, version and changelog files changed, and tag status.
+
+## Stop Conditions
+
+- Stop before staging when the intended file set, release decision, or ownership of dirty changes is unclear.
+- Stop after a local commit when push was not requested.
+- Stop on remote divergence, rejected push, unexpected branch, missing approval for force-push, or any tag operation.
+
+## Composition
+
+- Always invoke `$semantic-versioning` as the pre-commit gate.
+- Consume relevant evidence from `$test-and-verify`; do not duplicate a full readiness review.
+- Use `$ship-check` only when an explicit or repository-required readiness verdict applies.
+- Keep tags in `$semantic-versioning` and deployment outside this skill.
 
 ## Anti-Patterns
 

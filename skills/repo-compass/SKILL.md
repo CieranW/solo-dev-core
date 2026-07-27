@@ -7,6 +7,12 @@ description: Use when entering an unfamiliar repository, starting a new chat in 
 
 Build a compact repository map or reconstruct enough current context to resume work safely.
 
+## Boundaries
+
+- Use for unfamiliar repositories, fresh-chat recovery, handoffs, interrupted work, and repository-readiness orientation.
+- Do not use for implementation planning, root-cause diagnosis, diff review, or broad architecture assessment once sufficient repository context already exists.
+- Keep orientation read-only unless the user explicitly requests durable onboarding or repository guidance.
+
 ## Mode
 
 Infer the mode from the request and repository evidence. Do not ask the user to choose when the distinction is discoverable.
@@ -33,6 +39,13 @@ When uncertain, start with `RESUME` if current guidance and local history provid
 13. If durable onboarding or repository guidance is requested, update the nearest canonical `AGENTS.md` or existing runbook with concise project-specific facts. Otherwise keep the orientation phase read-only.
 14. Recommend the exact next action that reduces the most uncertainty or advances the stated goal.
 
+## Evidence
+
+- Applicable instructions, local status, branch, tracking state, and relevant bounded history inspected.
+- Commands labelled as verified, documented but unrun, or inferred.
+- Repository facts separated from user preferences, assumptions, stale records, and local tracking information.
+- Important source-of-truth, generated, configuration, and editing boundaries identified.
+
 ## Output Contract
 
 Return a compact working or session brief with:
@@ -47,6 +60,19 @@ Return a compact working or session brief with:
 - Current objective, constraints, and explicit assumptions.
 - Risks, unknowns, conflicts, and potentially stale context.
 - Exact recommended next action.
+
+## Stop Conditions
+
+- Stop after the brief when orientation or resumption alone was requested.
+- Stop expanding the repository map once the user's next action is safe and concrete.
+- Stop before mutation when durable guidance was not requested.
+
+## Composition
+
+- Hand materially fuzzy goals to `$clarify-intent`.
+- Use `$documentation` when durable onboarding or repository guidance is authorized.
+- Continue to `$implement-change` only when implementation was requested and the task is already decision-ready.
+- Do not automatically invoke review, verification, or shipping skills during orientation.
 
 ## Anti-Patterns
 

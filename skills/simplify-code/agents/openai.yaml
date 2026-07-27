@@ -1,0 +1,4 @@
+interface:
+  display_name: "Simplify Code"
+  short_description: "Reduce maintenance burden without changing behavior."
+  default_prompt: "Use $simplify-code to reduce code maintenance burden while preserving observable behavior."

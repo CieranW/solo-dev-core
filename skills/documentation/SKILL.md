@@ -7,6 +7,12 @@ description: Use when creating or updating Markdown documentation, README files,
 
 Use this skill whenever the work produces `.md` documentation or touches inline comments.
 
+## Boundaries
+
+- Use for Markdown, runbooks, plans, specs, changelogs, notes, and inline comments.
+- Do not use for implementing code behavior, deciding architecture, or creating a second source for an existing fact.
+- Mutate documentation only when creation or updates were requested; keep audits and reviews read-only.
+
 ## Workflow
 
 1. Identify the document's job and reader: guide, reference, runbook, plan, decision record, contributor note, operator note, or end-user documentation.
@@ -51,6 +57,13 @@ Bad comments:
 - Add personality, decoration, or apology.
 - Compensate for unclear names that should be renamed instead.
 
+## Evidence
+
+- Intended reader and document job identified.
+- Material claims traced to code, configuration, commands, or another canonical source.
+- Changed paths, links, commands, and examples checked or labelled unverified.
+- Resulting diff reviewed for duplication, stale adjacent text, and accidental sensitive or machine-specific data.
+
 ## Output Contract
 
 When finishing documentation work, report:
@@ -62,6 +75,19 @@ When finishing documentation work, report:
 - Any claims intentionally left unverified.
 - Links, paths, and command snippets checked, including anything deliberately not executed.
 - Inline comments added, changed, or removed and why.
+
+## Stop Conditions
+
+- Stop before creating a new document when an existing canonical source should be updated.
+- Stop before running stateful, destructive, privileged, network-dependent, or credential-dependent examples without authority.
+- Stop once the intended reader can complete the documented task without duplicated or speculative material.
+
+## Composition
+
+- Record durable plans from `$clarify-intent` only when persistence is justified.
+- Document approved outputs from implementation, dependency, architecture, or shipping workflows without taking over their decisions.
+- Use `$test-and-verify` when documentation makes executable behavior claims.
+- Hand Git publication to `$commit-and-push` only when requested.
 
 ## Anti-Patterns
 

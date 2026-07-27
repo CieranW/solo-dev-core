@@ -7,6 +7,12 @@ description: Use when the user asks to update, upgrade, refresh, pin, audit, or 
 
 Make dependency changes small, evidence-backed, and reversible.
 
+## Boundaries
+
+- Use for package, runtime, manifest, lockfile, compatibility, license, or dependency-advisory work.
+- Do not use for feature implementation, unrelated repository cleanup, or release publication.
+- Keep audits and recommendations read-only. Mutate only when an update, upgrade, pin, refresh, or remediation was explicitly requested.
+
 ## Workflow
 
 1. Read applicable repository instructions and inspect manifests, lockfiles, package-manager configuration, runtime constraints, current branch, and dirty worktree state.
@@ -31,6 +37,13 @@ Make dependency changes small, evidence-backed, and reversible.
 - If no compatible fix exists, report mitigations and the exact upgrade blocker instead of forcing unrelated major upgrades.
 - Never expose private registry credentials, tokens, or full sensitive configuration in output.
 
+## Evidence
+
+- Applicable repository policy, manifests, lockfiles, resolved graph, runtime constraints, and baseline inspected.
+- Current version, candidate version, advisories, compatibility, and migrations checked against authoritative current sources.
+- Manifest and lockfile diff reviewed for direct and transitive churn.
+- Resolved post-update graph and targeted behavior verified after mutation.
+
 ## Output Contract
 
 For every request, report:
@@ -46,6 +59,18 @@ For applied updates, also report:
 - Actual direct and transitive changes, including unexpected churn.
 - Verification run and result.
 - Advisory status based on the resolved graph when relevant.
+
+## Stop Conditions
+
+- Stop after the evidence-backed plan for audit, recommendation, or plan-only requests.
+- Stop when no compatible safe version exists; report the blocker and mitigations instead of forcing a broad upgrade.
+- Stop before unrelated direct dependency updates, mixed package-manager output, or manual generated-lockfile edits.
+
+## Composition
+
+- Use `$test-and-verify` for affected-boundary and practical regression evidence.
+- Use `$ship-check` only when the resulting dependency change needs a named readiness verdict.
+- Hand authorized Git publication to `$commit-and-push`; do not invoke `$implement-change` for ordinary dependency updates.
 
 ## Anti-Patterns
 

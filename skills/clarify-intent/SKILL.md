@@ -7,6 +7,12 @@ description: Use when a request is ambiguous or needs a decision-complete plan b
 
 Turn a fuzzy request into a safe, actionable task and the smallest plan needed to execute it.
 
+## Boundaries
+
+- Use for material ambiguity, decision-complete planning, or comparing implementation options before mutation.
+- Do not use to shrink a platform-sized idea, diagnose a failure, review a diff, or reopen decisions after an implementation-ready plan exists.
+- Keep planning read-only unless the user also requested implementation and all material decisions are resolved.
+
 ## Workflow
 
 1. Inspect discoverable context first: files, configs, docs, current state, prior messages, and available tools that can answer factual questions.
@@ -16,7 +22,7 @@ Turn a fuzzy request into a safe, actionable task and the smallest plan needed t
 5. For a broad product or feature idea likely to balloon, use `$solo-dev-scope` to select one valuable first milestone, then resume planning here.
 6. Ask only questions whose answers materially change the work, risk, scope, or output. When blocked, ask one decision at a time, starting with the answer that reduces the most downstream uncertainty. Do not bundle independent scope, integration, and preference decisions into one question. Include a recommended default when useful.
 7. If ambiguity is minor and risk is low, proceed with explicit, reversible assumptions.
-8. Produce the smallest decision-complete plan: ordered outcomes, affected areas, dependencies, verification, and meaningful risks. Avoid speculative file lists, architecture, or stack choices before the existing environment, integration boundaries, and operating constraints support them.
+8. Produce the smallest decision-complete plan: ordered outcomes, affected areas, dependencies, verification, and meaningful risks. When a real trade-off remains, compare only the credible options, recommend the smallest adequate design, and explain why. Avoid speculative file lists, architecture, or stack choices before the existing environment, integration boundaries, and operating constraints support them.
 9. Apply the mutation gate:
    - If the user requested clarification or planning only, stop after the plan.
    - If the user requested implementation and the plan is decision-ready, continue without asking for redundant confirmation.
@@ -45,6 +51,13 @@ For durable plans:
 
 Do not create plan documents for small, single-session tasks.
 
+## Evidence
+
+- Discoverable repository and operating context inspected before asking questions.
+- Outcome, success criteria, constraints, scope, and non-goals stated.
+- Material decisions resolved or surfaced explicitly with their consequences.
+- Verification path matched to the planned behavior.
+
 ## Output Contract
 
 When blocked on clarification, include:
@@ -62,6 +75,19 @@ When decision-ready, scale the response to the task and include:
 - Verification approach.
 - Risks, dependencies, or unresolved low-risk unknowns.
 - Next action: stop at the plan or continue with implementation.
+
+## Stop Conditions
+
+- Stop before mutation when the user requested planning only or a material decision remains unresolved.
+- Stop asking once the task is decision-ready; do not require redundant approval for already-authorized implementation.
+- Stop expanding the plan when the requested outcome has a safe, verifiable path.
+
+## Composition
+
+- Receive repository facts from `$repo-compass`.
+- Use `$solo-dev-scope` first when the request is too large for one safe milestone.
+- Own implementation-option comparison; do not create or invoke a separate design-first workflow.
+- Hand decision-ready mutation to `$implement-change` and evidence gathering to `$test-and-verify`.
 
 ## Anti-Patterns
 

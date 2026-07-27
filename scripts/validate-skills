@@ -65,6 +65,15 @@ STOPWORDS = {
     "with",
     "work",
 }
+REQUIRED_SKILL_SECTIONS = {
+    "## Boundaries",
+    "## Workflow",
+    "## Evidence",
+    "## Output Contract",
+    "## Stop Conditions",
+    "## Composition",
+}
+MUTATION_POLICIES = {"read-only", "may-mutate", "must-mutate"}
 
 
 def parse_scalar(
@@ -188,6 +197,51 @@ def parse_skill_frontmatter(path: Path, errors: list[str]) -> dict[str, str]:
     return values
 
 
+def markdown_h2_sections(content: str) -> dict[str, list[str]]:
+    sections: dict[str, list[list[str]]] = {}
+    current_heading: str | None = None
+    fence: str | None = None
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("```", "~~~")):
+            marker = stripped[:3]
+            if fence is None:
+                fence = marker
+            elif fence == marker:
+                fence = None
+            continue
+        if fence is None and line.startswith("## "):
+            current_heading = line.strip()
+            sections.setdefault(current_heading, []).append([])
+            continue
+        if current_heading is not None:
+            sections[current_heading][-1].append(line)
+    return {
+        heading: ["\n".join(lines).strip() for lines in bodies]
+        for heading, bodies in sections.items()
+    }
+
+
+def validate_skill_body(path: Path, errors: list[str]) -> None:
+    try:
+        content = path.read_text()
+    except OSError as exc:
+        errors.append(f"{path}: cannot read file: {exc}")
+        return
+    if "[TODO:" in content:
+        errors.append(f"{path}: contains an unresolved TODO placeholder")
+    sections = markdown_h2_sections(content)
+    missing = sorted(REQUIRED_SKILL_SECTIONS - sections.keys())
+    if missing:
+        errors.append(f"{path}: missing required sections: {', '.join(missing)}")
+    for heading in sorted(REQUIRED_SKILL_SECTIONS & sections.keys()):
+        bodies = sections[heading]
+        if len(bodies) > 1:
+            errors.append(f"{path}: duplicate required section: {heading}")
+        if not bodies[0]:
+            errors.append(f"{path}: empty required section: {heading}")
+
+
 def validate_skill(
     skill_dir: Path, errors: list[str]
 ) -> tuple[str | None, str | None]:
@@ -196,6 +250,7 @@ def validate_skill(
         errors.append(f"{skill_dir}: missing SKILL.md")
         return None, None
 
+    validate_skill_body(skill_path, errors)
     frontmatter = parse_skill_frontmatter(skill_path, errors)
     name = frontmatter.get("name")
     description = frontmatter.get("description")
@@ -301,7 +356,20 @@ def validate_readme(root: Path, skill_names: set[str], errors: list[str]) -> Non
     if not match:
         errors.append(f"{path}: missing '## Skills' section")
         return
-    listed = re.findall(r"^- `([a-z0-9-]+)`:", match.group("body"), re.MULTILINE)
+    listed: list[str] = []
+    for line in match.group("body").splitlines():
+        bullet = re.match(
+            r"^\s*[-*+]\s+`([a-z0-9]+(?:-[a-z0-9]+)*)`(?:\s|:|$)",
+            line,
+        )
+        table = re.match(
+            r"^\s*\|[^|]*\|\s*`([a-z0-9]+(?:-[a-z0-9]+)*)`\s*\|",
+            line,
+        )
+        if bullet:
+            listed.append(bullet.group(1))
+        elif table:
+            listed.append(table.group(1))
     duplicates = sorted({name for name in listed if listed.count(name) > 1})
     if duplicates:
         errors.append(f"{path}: duplicate skill entries: {', '.join(duplicates)}")
@@ -366,9 +434,14 @@ def validate_evals(
         errors.append(f"{path}: invalid eval scenario definitions: {exc}")
         return 0, set()
 
-    if not isinstance(data, dict) or data.get("version") != 1:
-        errors.append(f"{path}: top-level version must be 1")
+    if not isinstance(data, dict) or data.get("version") != 2:
+        errors.append(f"{path}: top-level version must be 2")
         return 0, set()
+    unknown_top_level = sorted(set(data) - {"version", "scenarios"})
+    if unknown_top_level:
+        errors.append(
+            f"{path}: unknown top-level fields: {', '.join(unknown_top_level)}"
+        )
     scenarios = data.get("scenarios")
     if not isinstance(scenarios, list):
         errors.append(f"{path}: scenarios must be a list")
@@ -381,8 +454,15 @@ def validate_evals(
         if not isinstance(scenario, dict):
             errors.append(f"{location}: scenario must be an object")
             continue
+        unknown_scenario_fields = sorted(
+            set(scenario) - {"id", "request", "expected"}
+        )
+        if unknown_scenario_fields:
+            errors.append(
+                f"{location}: unknown scenario fields: "
+                + ", ".join(unknown_scenario_fields)
+            )
         scenario_id = scenario.get("id")
-        skill = scenario.get("skill")
         request = scenario.get("request")
         expected = scenario.get("expected")
         if not isinstance(scenario_id, str) or not NAME_RE.fullmatch(scenario_id):
@@ -391,16 +471,100 @@ def validate_evals(
             errors.append(f"{location}: duplicate id '{scenario_id}'")
         else:
             seen_ids.add(scenario_id)
-        if not isinstance(skill, str) or skill not in skill_names:
-            errors.append(f"{location}: skill must name an existing skill")
-        else:
-            covered_skills.add(skill)
         if not isinstance(request, str) or not request.strip():
             errors.append(f"{location}: request must be a non-empty string")
         if not isinstance(expected, dict):
             errors.append(f"{location}: expected must be an object")
             continue
-        for key in ("must", "must_not"):
+        unknown_expected_fields = sorted(
+            set(expected)
+            - {
+                "skills",
+                "must_not_select",
+                "mutation",
+                "output",
+                "failure_indicators",
+            }
+        )
+        if unknown_expected_fields:
+            errors.append(
+                f"{location}: unknown expected fields: "
+                + ", ".join(unknown_expected_fields)
+            )
+
+        selected = expected.get("skills")
+        if not isinstance(selected, list) or not selected:
+            errors.append(
+                f"{location}: expected.skills must be a non-empty ordered list"
+            )
+            selected_names: list[str] = []
+        elif not all(isinstance(skill, str) for skill in selected):
+            errors.append(f"{location}: expected.skills entries must be strings")
+            selected_names = []
+        else:
+            selected_names = selected
+            duplicates = sorted(
+                {skill for skill in selected_names if selected_names.count(skill) > 1}
+            )
+            if duplicates:
+                errors.append(
+                    f"{location}: expected.skills contains duplicates: "
+                    + ", ".join(duplicates)
+                )
+            unknown = sorted(set(selected_names) - skill_names)
+            if unknown:
+                errors.append(
+                    f"{location}: expected.skills names unknown skills: "
+                    + ", ".join(unknown)
+                )
+            covered_skills.update(set(selected_names) & skill_names)
+
+        forbidden = expected.get("must_not_select")
+        if not isinstance(forbidden, list) or not forbidden:
+            errors.append(
+                f"{location}: expected.must_not_select must be a non-empty list"
+            )
+            forbidden_names: list[str] = []
+        elif not all(isinstance(skill, str) for skill in forbidden):
+            errors.append(
+                f"{location}: expected.must_not_select entries must be strings"
+            )
+            forbidden_names = []
+        else:
+            forbidden_names = forbidden
+            duplicates = sorted(
+                {
+                    skill
+                    for skill in forbidden_names
+                    if forbidden_names.count(skill) > 1
+                }
+            )
+            if duplicates:
+                errors.append(
+                    f"{location}: expected.must_not_select contains duplicates: "
+                    + ", ".join(duplicates)
+                )
+            unknown = sorted(set(forbidden_names) - skill_names)
+            if unknown:
+                errors.append(
+                    f"{location}: expected.must_not_select names unknown skills: "
+                    + ", ".join(unknown)
+                )
+            overlap = sorted(set(selected_names) & set(forbidden_names))
+            if overlap:
+                errors.append(
+                    f"{location}: skills cannot be both selected and forbidden: "
+                    + ", ".join(overlap)
+                )
+
+        mutation = expected.get("mutation")
+        if mutation not in MUTATION_POLICIES:
+            errors.append(
+                f"{location}: expected.mutation must be one of "
+                + ", ".join(sorted(MUTATION_POLICIES))
+            )
+
+        for key in ("output", "failure_indicators"):
             rules = expected.get(key)
             if not isinstance(rules, list) or not all(
                 isinstance(rule, str) and rule.strip() for rule in rules
@@ -408,8 +572,10 @@ def validate_evals(
                 errors.append(
                     f"{location}: expected.{key} must be a list of non-empty strings"
                 )
-        if not expected.get("must"):
-            errors.append(f"{location}: expected.must must contain at least one rule")
+            elif not rules:
+                errors.append(
+                    f"{location}: expected.{key} must contain at least one rule"
+                )
     return len(scenarios), covered_skills
 
 
