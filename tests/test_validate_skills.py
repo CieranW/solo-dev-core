@@ -51,9 +51,13 @@ class ValidateSkillsTests(unittest.TestCase):
         root = Path(temporary.name)
         (root / ".codex-plugin").mkdir()
         (root / "evals").mkdir()
+        (root / "global").mkdir()
         (root / ".codex-plugin" / "plugin.json").write_text(
             json.dumps({"name": "fixture", "version": "1.0.0", "skills": "./skills/"})
         )
+        director_contract = "Codex is always the Engineering Director.\n"
+        (root / "AGENTS.md").write_text(director_contract)
+        (root / "global" / "AGENTS.md").write_text(director_contract)
         self.add_skill(root, "alpha-skill")
         self.add_skill(
             root,
@@ -102,6 +106,61 @@ class ValidateSkillsTests(unittest.TestCase):
     def test_current_repository_passes(self) -> None:
         result = self.run_validator(REPO_ROOT)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_missing_engineering_director_identity_fails(self) -> None:
+        with self.make_fixture() as directory:
+            root = Path(directory)
+            (root / "global" / "AGENTS.md").write_text("Generic instructions.\n")
+            result = self.run_validator(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("must state 'Codex is always the Engineering Director'", result.stderr)
+
+    def test_leadership_skill_fails(self) -> None:
+        with self.make_fixture() as directory:
+            root = Path(directory)
+            self.add_skill(root, "lead-engineer")
+            result = self.run_validator(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(
+            "leadership is an always-active root identity, not a skill: lead-engineer",
+            result.stderr,
+        )
+
+    def test_engineering_director_scenario_may_select_no_skill(self) -> None:
+        with self.make_fixture() as directory:
+            root = Path(directory)
+            scenarios_path = root / "evals" / "scenarios.json"
+            scenarios = json.loads(scenarios_path.read_text())
+            scenarios["scenarios"].append(
+                {
+                    "id": "engineering-director-root-only",
+                    "request": "Decide whether this tiny task needs delegation.",
+                    "expected": {
+                        "skills": [],
+                        "must_not_select": ["alpha-skill", "beta-skill"],
+                        "mutation": "read-only",
+                        "output": ["Work directly without selecting a procedure."],
+                        "failure_indicators": ["Selects a skill unnecessarily."],
+                    },
+                }
+            )
+            scenarios_path.write_text(json.dumps(scenarios))
+            result = self.run_validator(root)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_empty_skills_requires_engineering_director_scenario(self) -> None:
+        with self.make_fixture() as directory:
+            root = Path(directory)
+            scenarios_path = root / "evals" / "scenarios.json"
+            scenarios = json.loads(scenarios_path.read_text())
+            scenarios["scenarios"][0]["expected"]["skills"] = []
+            scenarios_path.write_text(json.dumps(scenarios))
+            result = self.run_validator(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(
+            "expected.skills may be empty only for an engineering-director-",
+            result.stderr,
+        )
 
     def test_missing_metadata_fails(self) -> None:
         with self.make_fixture() as directory:

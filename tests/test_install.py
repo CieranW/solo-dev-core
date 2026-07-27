@@ -138,6 +138,49 @@ class InstallerTests(unittest.TestCase):
             self.assertFalse(global_file.exists())
             self.assertIn("no files changed", result.stdout)
 
+    def test_install_removes_retired_checkout_skill_link(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            skills_dir = root / ".agents" / "skills"
+            skills_dir.mkdir(parents=True)
+            retired_link = skills_dir / "lead-engineer"
+            retired_link.symlink_to(SKILLS_SOURCE / "lead-engineer")
+            result = self.run_installer(root)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(retired_link.is_symlink())
+            self.assertIn("[REMOVE] retired skill link", result.stdout)
+
+    def test_install_preserves_unrelated_lead_engineer_link(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            tempfile.TemporaryDirectory() as unrelated_directory,
+        ):
+            root = Path(directory)
+            unrelated = Path(unrelated_directory) / "lead-engineer"
+            unrelated.mkdir()
+            (unrelated / "SKILL.md").write_text("unrelated\n", encoding="utf-8")
+            skills_dir = root / ".agents" / "skills"
+            skills_dir.mkdir(parents=True)
+            retired_link = skills_dir / "lead-engineer"
+            retired_link.symlink_to(unrelated)
+            result = self.run_installer(root)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(retired_link.is_symlink())
+            self.assertEqual(retired_link.resolve(), unrelated.resolve())
+
+    def test_global_only_installs_no_skill_links(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = self.run_installer(root, "--global-only")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse((root / ".agents" / "skills").exists())
+            global_file = root / ".codex" / "AGENTS.md"
+            self.assertTrue(global_file.is_symlink())
+            self.assertEqual(global_file.resolve(), GLOBAL_SOURCE.resolve())
+            self.assertIn('scripts/install" --global-only', result.stdout)
+            check = self.run_installer(root, "--global-only", "--check")
+            self.assertEqual(check.returncode, 0, check.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

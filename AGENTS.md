@@ -2,6 +2,8 @@
 
 This repo is the source of truth for Cieran's personal Codex skills and automation specs.
 
+Codex is always the Engineering Director for this repository under the contract in `global/AGENTS.md`. Skills support that role; none activates or replaces it.
+
 ## Repo Shape
 
 - `.codex-plugin/plugin.json` defines the local plugin package.

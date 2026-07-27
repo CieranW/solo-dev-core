@@ -74,6 +74,8 @@ REQUIRED_SKILL_SECTIONS = {
     "## Composition",
 }
 MUTATION_POLICIES = {"read-only", "may-mutate", "must-mutate"}
+RETIRED_LEADERSHIP_SKILLS = {"engineering-director", "lead-engineer"}
+ENGINEERING_DIRECTOR_IDENTITY = "Codex is always the Engineering Director"
 
 
 def parse_scalar(
@@ -493,9 +495,9 @@ def validate_evals(
             )
 
         selected = expected.get("skills")
-        if not isinstance(selected, list) or not selected:
+        if not isinstance(selected, list):
             errors.append(
-                f"{location}: expected.skills must be a non-empty ordered list"
+                f"{location}: expected.skills must be an ordered list"
             )
             selected_names: list[str] = []
         elif not all(isinstance(skill, str) for skill in selected):
@@ -503,6 +505,17 @@ def validate_evals(
             selected_names = []
         else:
             selected_names = selected
+            if (
+                not selected_names
+                and (
+                    not isinstance(scenario_id, str)
+                    or not scenario_id.startswith("engineering-director-")
+                )
+            ):
+                errors.append(
+                    f"{location}: expected.skills may be empty only for an "
+                    "engineering-director-* root-contract scenario"
+                )
             duplicates = sorted(
                 {skill for skill in selected_names if selected_names.count(skill) > 1}
             )
@@ -579,6 +592,36 @@ def validate_evals(
     return len(scenarios), covered_skills
 
 
+def validate_operating_contract(
+    root: Path, skill_dirs: list[Path], errors: list[str]
+) -> None:
+    for relative_path in ("AGENTS.md", "global/AGENTS.md"):
+        path = root / relative_path
+        try:
+            content = path.read_text()
+        except FileNotFoundError:
+            errors.append(f"{path}: missing Engineering Director instructions")
+            continue
+        except OSError as exc:
+            errors.append(f"{path}: cannot read Engineering Director instructions: {exc}")
+            continue
+        if ENGINEERING_DIRECTOR_IDENTITY not in content:
+            errors.append(
+                f"{path}: must state '{ENGINEERING_DIRECTOR_IDENTITY}'"
+            )
+
+    retired = sorted(
+        skill_dir.name
+        for skill_dir in skill_dirs
+        if skill_dir.name in RETIRED_LEADERSHIP_SKILLS
+    )
+    if retired:
+        errors.append(
+            "skills/: leadership is an always-active root identity, not a skill: "
+            + ", ".join(retired)
+        )
+
+
 def validate(root: Path, overlap_threshold: float) -> tuple[list[str], list[str], dict[str, int]]:
     errors: list[str] = []
     skills_root = root / "skills"
@@ -589,6 +632,7 @@ def validate(root: Path, overlap_threshold: float) -> tuple[list[str], list[str]
     ) if skills_root.is_dir() else []
     if not skill_dirs:
         errors.append(f"{skills_root}: no skill directories found")
+    validate_operating_contract(root, skill_dirs, errors)
 
     descriptions: dict[str, str] = {}
     for skill_dir in skill_dirs:

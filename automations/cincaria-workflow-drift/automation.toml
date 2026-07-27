@@ -8,4 +8,4 @@ rrule = "FREQ=WEEKLY;BYDAY=WE;BYHOUR=0;BYMINUTE=0;BYSECOND=0"
 model = "gpt-5.5"
 reasoning_effort = "high"
 execution_environment = "local"
-cwds = ["/Users/cieranwong/repos/Cincaria/cincaria-devsecops", "/Users/cieranwong/repos/Cincaria"]
+cwds = ["/Users/cieranwong/repos/Cincaria"]

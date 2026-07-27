@@ -6,7 +6,7 @@
       "request": "Orient me around this unfamiliar repository. The README lists run and test commands, but do not install dependencies or make changes.",
       "expected": {
         "skills": ["repo-compass"],
-        "must_not_select": ["lead-engineer", "clarify-intent", "implement-change", "ship-check"],
+        "must_not_select": ["clarify-intent", "implement-change", "ship-check"],
         "mutation": "read-only",
         "output": [
           "Infer ORIENT mode and inspect the smallest useful source set.",
@@ -42,7 +42,7 @@
       "request": "Build an internal dashboard for our five-person support team. It should help us work faster; use whatever stack you think is best.",
       "expected": {
         "skills": ["clarify-intent"],
-        "must_not_select": ["lead-engineer", "implement-change", "architecture-review", "commit-and-push"],
+        "must_not_select": ["implement-change", "architecture-review", "commit-and-push"],
         "mutation": "read-only",
         "output": [
           "Inspect discoverable context before asking for facts.",
@@ -78,7 +78,7 @@
       "request": "Build an AI personal-finance SaaS with bank sync, budgeting, investments, tax advice, alerts, subscriptions, and native mobile apps.",
       "expected": {
         "skills": ["solo-dev-scope"],
-        "must_not_select": ["lead-engineer", "clarify-intent", "architecture-review", "implement-change"],
+        "must_not_select": ["clarify-intent", "architecture-review", "implement-change"],
         "mutation": "read-only",
         "output": [
           "Select one end-to-end first milestone and proof signal.",
@@ -186,7 +186,7 @@
       "request": "Implement the approved --json CLI option now. Preserve text output by default, emit stable keys status, version, and checkedAt, add no dependencies, update the focused tests, and stop before committing.",
       "expected": {
         "skills": ["implement-change", "test-and-verify"],
-        "must_not_select": ["lead-engineer", "clarify-intent", "dependency-maintenance", "commit-and-push"],
+        "must_not_select": ["clarify-intent", "dependency-maintenance", "commit-and-push"],
         "mutation": "must-mutate",
         "output": [
           "Inspect existing patterns and change the smallest coherent file set.",
@@ -294,7 +294,7 @@
       "request": "Adopt this existing repository into the project-memory system. Reconstruct its direction and current milestone, create docs/PROJECT.md, add its registry entries, mark uncertainty for my review, and do not change application code or commit.",
       "expected": {
         "skills": ["adopt-project", "repo-compass", "documentation"],
-        "must_not_select": ["lead-engineer", "implement-change", "start-work", "commit-and-push"],
+        "must_not_select": ["implement-change", "start-work", "commit-and-push"],
         "mutation": "must-mutate",
         "output": [
           "Inspect repository and Git evidence before reconstructing the record.",
@@ -312,7 +312,7 @@
       "request": "Update docs/PROJECT.md to match this repository. The file says the migration is complete, but the branch and code may disagree. Inspect status and recent history, do not run tests, and mark uncertainty explicitly.",
       "expected": {
         "skills": ["project-status", "repo-compass", "documentation"],
-        "must_not_select": ["lead-engineer", "adopt-project", "finish-work", "test-and-verify", "implement-change"],
+        "must_not_select": ["adopt-project", "finish-work", "test-and-verify", "implement-change"],
         "mutation": "must-mutate",
         "output": [
           "Infer UPDATE mode and compare every status claim with Git and implementation evidence.",
@@ -330,7 +330,7 @@
       "request": "Use start-work to resume this managed repository after two months. Keep the start phase read-only, reconcile docs/PROJECT.md with local Git evidence, and recommend one bounded batch. The feature I mentioned is currently under Future Ideas.",
       "expected": {
         "skills": ["start-work", "repo-compass", "project-status"],
-        "must_not_select": ["lead-engineer", "documentation", "implement-change", "finish-work"],
+        "must_not_select": ["documentation", "implement-change", "finish-work"],
         "mutation": "read-only",
         "output": [
           "Infer RESUME mode and run project-status in CHECK mode.",
@@ -348,7 +348,7 @@
       "request": "Finish this development batch. Inspect the complete diff, run the focused validation needed for the completion claim, update docs/PROJECT.md with completed and remaining work, capture new future ideas, flag ADR candidates, and stop before staging or committing.",
       "expected": {
         "skills": ["finish-work", "test-and-verify", "documentation"],
-        "must_not_select": ["lead-engineer", "project-status", "start-work", "implement-change", "commit-and-push"],
+        "must_not_select": ["project-status", "start-work", "implement-change", "commit-and-push"],
         "mutation": "must-mutate",
         "output": [
           "Match fresh evidence to completed and unverified work before updating the record.",
@@ -362,10 +362,10 @@
       }
     },
     {
-      "id": "lead-direct-no-delegation",
-      "request": "Use the lead-engineer workflow to fix one obvious off-by-one error in this single parser function, add the focused regression test, and stop before committing.",
+      "id": "engineering-director-direct-no-delegation",
+      "request": "Fix one obvious off-by-one error in this single parser function, add the focused regression test, and stop before committing.",
       "expected": {
-        "skills": ["lead-engineer", "implement-change", "test-and-verify"],
+        "skills": ["implement-change", "test-and-verify"],
         "must_not_select": ["clarify-intent", "architecture-review", "review-changes"],
         "mutation": "must-mutate",
         "output": [
@@ -380,16 +380,34 @@
       }
     },
     {
-      "id": "lead-medium-investigations",
+      "id": "engineering-director-root-only",
+      "request": "Advise whether a one-line documentation typo needs delegation or a special workflow. Do not edit files.",
+      "expected": {
+        "skills": [],
+        "must_not_select": ["clarify-intent", "documentation", "implement-change"],
+        "mutation": "read-only",
+        "output": [
+          "Treat the Engineering Director role as already active without selecting a skill.",
+          "Decide that specialist coordination would cost more than the information gained.",
+          "Recommend direct correction and targeted validation if implementation is later authorized."
+        ],
+        "failure_indicators": [
+          "Selects a workflow merely to activate leadership.",
+          "Spawns a specialist or creates a durable plan for the trivial decision."
+        ]
+      }
+    },
+    {
+      "id": "engineering-director-medium-investigations",
       "request": "Plan only. Lead the addition of a customer-tier field across our API, database schema, and frontend. Use the minimum useful independent read-only investigations and return one integrated plan.",
       "expected": {
-        "skills": ["lead-engineer"],
+        "skills": ["clarify-intent"],
         "must_not_select": ["implement-change", "ship-check", "commit-and-push"],
         "mutation": "read-only",
         "output": [
           "Classify the work from component, compatibility, migration, and validation drivers rather than time.",
           "Define non-overlapping read-only investigations for persistence and API compatibility and for the consumer and test surface.",
-          "Synthesize findings into one decision-complete plan owned by the lead."
+          "Synthesize findings into one decision-complete plan owned by the Engineering Director."
         ],
         "failure_indicators": [
           "Lets specialists edit overlapping files or decide scope.",
@@ -398,10 +416,10 @@
       }
     },
     {
-      "id": "lead-security-sensitive",
+      "id": "legacy-lead-coordination",
       "request": "Use lead-engineer to plan a small authentication-cookie change that affects session invalidation and rollback. Keep all investigation read-only.",
       "expected": {
-        "skills": ["lead-engineer"],
+        "skills": ["clarify-intent"],
         "must_not_select": ["implement-change", "ship-check", "commit-and-push"],
         "mutation": "read-only",
         "output": [
@@ -416,15 +434,15 @@
       }
     },
     {
-      "id": "lead-conflict-resolution",
+      "id": "engineering-director-conflict-resolution",
       "request": "Coordinate a read-only plan for a production token migration. Security recommends immediate invalidation, while operations recommends a compatibility window. Resolve the conflict and do not implement.",
       "expected": {
-        "skills": ["lead-engineer"],
+        "skills": ["clarify-intent"],
         "must_not_select": ["implement-change", "semantic-versioning", "commit-and-push"],
         "mutation": "read-only",
         "output": [
           "Compare evidence strength, threat model, compatibility constraints, reversibility, and outage risk.",
-          "Make one lead-owned decision with the rejected alternative and conditions that would reopen it.",
+          "Make one Engineering Director-owned decision with the rejected alternative and conditions that would reopen it.",
           "Produce staged next steps and a continuity payload for the expected handoff."
         ],
         "failure_indicators": [
@@ -434,10 +452,10 @@
       }
     },
     {
-      "id": "lead-epic-decomposition",
+      "id": "engineering-director-epic-decomposition",
       "request": "Lead and coordinate this program: replace three services, migrate two databases, redesign the client, and move deployment platforms. Select the first milestone only.",
       "expected": {
-        "skills": ["lead-engineer", "solo-dev-scope"],
+        "skills": ["solo-dev-scope"],
         "must_not_select": ["architecture-review", "implement-change", "ship-check"],
         "mutation": "read-only",
         "output": [
@@ -452,16 +470,16 @@
       }
     },
     {
-      "id": "lead-no-subagents",
+      "id": "engineering-director-no-subagents",
       "request": "Coordinate a read-only comparison of two independent migration risks, but no subagents are available in this environment.",
       "expected": {
-        "skills": ["lead-engineer"],
+        "skills": ["architecture-review"],
         "must_not_select": ["implement-change", "review-changes", "ship-check"],
         "mutation": "read-only",
         "output": [
           "Run the same bounded investigation questions serially.",
           "Preserve separate evidence and synthesize one decision.",
-          "Label the result as lead analysis rather than independent review."
+          "Label the result as Engineering Director analysis rather than independent review."
         ],
         "failure_indicators": [
           "Claims independent review without a separate reviewer.",
@@ -470,10 +488,10 @@
       }
     },
     {
-      "id": "lead-future-idea-capture",
+      "id": "engineering-director-future-idea-capture",
       "request": "While coordinating the current milestone, record this large observability platform idea for later without expanding current scope. Use the repository's existing project-memory convention.",
       "expected": {
-        "skills": ["lead-engineer", "capture-idea", "documentation"],
+        "skills": ["capture-idea", "documentation"],
         "must_not_select": ["solo-dev-scope", "architecture-review", "implement-change"],
         "mutation": "must-mutate",
         "output": [
@@ -488,10 +506,10 @@
       }
     },
     {
-      "id": "lead-shared-lesson-proposal",
-      "request": "A project-specific deployment incident revealed a lesson that may help other repositories. Use lead-engineer to prepare a shared-improvement proposal, but do not edit solo-dev-core.",
+      "id": "engineering-director-shared-lesson-proposal",
+      "request": "A project-specific deployment incident revealed a lesson that may help other repositories. Prepare a shared-improvement proposal, but do not edit solo-dev-core.",
       "expected": {
-        "skills": ["lead-engineer"],
+        "skills": ["clarify-intent"],
         "must_not_select": ["documentation", "implement-change", "commit-and-push"],
         "mutation": "read-only",
         "output": [
@@ -510,7 +528,7 @@
       "request": "Pause for a moment and capture this offline-sync architecture idea for later. Check for duplicates, explain why it is valuable and deferred, give it a concrete reconsideration trigger, do not change Active or Next, and then return me to the current import bug.",
       "expected": {
         "skills": ["capture-idea", "documentation"],
-        "must_not_select": ["lead-engineer", "solo-dev-scope", "roadmap-review", "implement-change"],
+        "must_not_select": ["solo-dev-scope", "roadmap-review", "implement-change"],
         "mutation": "must-mutate",
         "output": [
           "Inspect the current milestone and related project-memory entries before capture.",
@@ -528,7 +546,7 @@
       "request": "Record this background export idea under Future Ideas, but first detect whether the existing scheduled-export entry already covers it. Keep the current milestone unchanged and resume the task afterward.",
       "expected": {
         "skills": ["capture-idea", "documentation"],
-        "must_not_select": ["lead-engineer", "clarify-intent", "roadmap-review", "implement-change"],
+        "must_not_select": ["clarify-intent", "roadmap-review", "implement-change"],
         "mutation": "must-mutate",
         "output": [
           "Compare intent, value, dependencies, trigger, and related components rather than title alone.",
@@ -546,7 +564,7 @@
       "request": "Review the project's Next, Future, Deferred, and Abandoned work. Deduplicate ideas, flag obsolete entries and satisfied triggers, and recommend justified movements. Keep this review read-only and do not promote anything to Active.",
       "expected": {
         "skills": ["roadmap-review", "project-status"],
-        "must_not_select": ["lead-engineer", "capture-idea", "documentation", "implement-change"],
+        "must_not_select": ["capture-idea", "documentation", "implement-change"],
         "mutation": "read-only",
         "output": [
           "Infer REVIEW mode and reconcile current milestone evidence first.",
@@ -564,7 +582,7 @@
       "request": "Apply a roadmap cleanup to docs/PROJECT.md: merge duplicate future ideas, move the dependency-blocked item back from Next to Future, and mark the rejected cache rewrite Abandoned because its history matters. Do not change Active or application code.",
       "expected": {
         "skills": ["roadmap-review", "project-status", "documentation"],
-        "must_not_select": ["lead-engineer", "capture-idea", "implement-change", "commit-and-push"],
+        "must_not_select": ["capture-idea", "implement-change", "commit-and-push"],
         "mutation": "must-mutate",
         "output": [
           "Infer APPLY mode and support each movement with current evidence.",
@@ -582,7 +600,7 @@
       "request": "Review my registered project portfolio without changing anything. Some repositories are not cloned on this machine. Report each milestone, status, last verification, risks, next action, stale records, missing milestones, and Future Idea triggers that may need reconsideration.",
       "expected": {
         "skills": ["portfolio-review"],
-        "must_not_select": ["lead-engineer", "adopt-project", "project-status", "roadmap-review", "documentation", "implement-change"],
+        "must_not_select": ["adopt-project", "project-status", "roadmap-review", "documentation", "implement-change"],
         "mutation": "read-only",
         "output": [
           "Validate the explicit logical registry and optional machine-local mapping before scanning.",
@@ -600,7 +618,7 @@
       "request": "Run a read-only portfolio review with local Git inspection. Flag dirty working trees and branches ahead of their configured upstreams, but do not fetch, pull, edit, commit, or push.",
       "expected": {
         "skills": ["portfolio-review"],
-        "must_not_select": ["lead-engineer", "project-status", "start-work", "commit-and-push"],
+        "must_not_select": ["project-status", "start-work", "commit-and-push"],
         "mutation": "read-only",
         "output": [
           "Inspect local branch, working-tree state, upstream, and local ahead count with optional Git locks disabled.",

@@ -9,6 +9,7 @@ usage() {
     printf '%s\n' "Options:"
     printf '%s\n' "  --check              Validate the expected links without changing anything."
     printf '%s\n' "  --dry-run            Show planned changes without applying them."
+    printf '%s\n' "  --global-only        Install only global guidance; use with marketplace-provided skills."
     printf '%s\n' "  --replace-links       Refresh conflicting symlinks; never replaces files or directories."
     printf '%s\n' "  --skills-dir PATH     Override the user skill directory."
     printf '%s\n' "  --global-file PATH    Override the global AGENTS.md destination."
@@ -75,6 +76,7 @@ describe_existing() {
 
 mode=install
 replace_links=0
+install_skills=1
 skills_dir=
 global_file=
 
@@ -90,6 +92,9 @@ while [ "$#" -gt 0 ]; do
             ;;
         --replace-links)
             replace_links=1
+            ;;
+        --global-only)
+            install_skills=0
             ;;
         --skills-dir)
             [ "$#" -ge 2 ] || fail "--skills-dir requires a path"
@@ -123,6 +128,7 @@ script_dir=$(CDPATH='' cd "$(dirname "$0")" && pwd -P)
 repo_root=$(CDPATH='' cd "$script_dir/.." && pwd -P)
 skills_source=$repo_root/skills
 global_source=$repo_root/global/AGENTS.md
+retired_skills="lead-engineer"
 
 [ -d "$skills_source" ] || fail "missing skill source directory: $skills_source"
 [ -f "$global_source" ] || fail "missing global guidance: $global_source"
@@ -140,28 +146,39 @@ fi
 conflicts=0
 skill_count=0
 
-for source in "$skills_source"/*; do
-    [ -d "$source" ] || continue
-    [ -f "$source/SKILL.md" ] || continue
-    skill_count=$((skill_count + 1))
-    target=$skills_dir/$(basename "$source")
-    if link_matches "$target" "$source"; then
-        continue
-    fi
-    if ! path_exists "$target"; then
-        if [ "$mode" = check ]; then
-            printf '[ERROR] missing skill link: %s\n' "$target" >&2
+if [ "$install_skills" -eq 1 ]; then
+    for retired_skill in $retired_skills; do
+        retired_target=$skills_dir/$retired_skill
+        retired_source=$skills_source/$retired_skill
+        if link_matches "$retired_target" "$retired_source" && [ "$mode" = check ]; then
+            printf '[ERROR] retired skill link remains: %s\n' "$retired_target" >&2
             conflicts=$((conflicts + 1))
         fi
-        continue
-    fi
-    if [ -L "$target" ] && [ "$replace_links" -eq 1 ] && [ "$mode" != check ]; then
-        continue
-    fi
-    printf '[ERROR] skill conflict: %s is a %s\n' \
-        "$target" "$(describe_existing "$target")" >&2
-    conflicts=$((conflicts + 1))
-done
+    done
+
+    for source in "$skills_source"/*; do
+        [ -d "$source" ] || continue
+        [ -f "$source/SKILL.md" ] || continue
+        skill_count=$((skill_count + 1))
+        target=$skills_dir/$(basename "$source")
+        if link_matches "$target" "$source"; then
+            continue
+        fi
+        if ! path_exists "$target"; then
+            if [ "$mode" = check ]; then
+                printf '[ERROR] missing skill link: %s\n' "$target" >&2
+                conflicts=$((conflicts + 1))
+            fi
+            continue
+        fi
+        if [ -L "$target" ] && [ "$replace_links" -eq 1 ] && [ "$mode" != check ]; then
+            continue
+        fi
+        printf '[ERROR] skill conflict: %s is a %s\n' \
+            "$target" "$(describe_existing "$target")" >&2
+        conflicts=$((conflicts + 1))
+    done
+fi
 
 if link_matches "$global_file" "$global_source"; then
     :
@@ -193,18 +210,27 @@ fi
 
 if [ "$mode" = dry-run ]; then
     printf 'Dry run: source checkout %s\n' "$repo_root"
-    for source in "$skills_source"/*; do
-        [ -d "$source" ] || continue
-        [ -f "$source/SKILL.md" ] || continue
-        target=$skills_dir/$(basename "$source")
-        if link_matches "$target" "$source"; then
-            printf '[OK] %s\n' "$target"
-        elif [ -L "$target" ]; then
-            printf '[PLAN] refresh %s -> %s\n' "$target" "$source"
-        else
-            printf '[PLAN] link %s -> %s\n' "$target" "$source"
-        fi
-    done
+    if [ "$install_skills" -eq 1 ]; then
+        for retired_skill in $retired_skills; do
+            retired_target=$skills_dir/$retired_skill
+            retired_source=$skills_source/$retired_skill
+            if link_matches "$retired_target" "$retired_source"; then
+                printf '[PLAN] remove retired skill link %s\n' "$retired_target"
+            fi
+        done
+        for source in "$skills_source"/*; do
+            [ -d "$source" ] || continue
+            [ -f "$source/SKILL.md" ] || continue
+            target=$skills_dir/$(basename "$source")
+            if link_matches "$target" "$source"; then
+                printf '[OK] %s\n' "$target"
+            elif [ -L "$target" ]; then
+                printf '[PLAN] refresh %s -> %s\n' "$target" "$source"
+            else
+                printf '[PLAN] link %s -> %s\n' "$target" "$source"
+            fi
+        done
+    fi
     if link_matches "$global_file" "$global_source"; then
         printf '[OK] %s\n' "$global_file"
     elif [ -L "$global_file" ]; then
@@ -216,24 +242,39 @@ if [ "$mode" = dry-run ]; then
     exit 0
 fi
 
-mkdir -p "$skills_dir" "$(dirname "$global_file")"
+if [ "$install_skills" -eq 1 ]; then
+    mkdir -p "$skills_dir"
+fi
+mkdir -p "$(dirname "$global_file")"
 changes=0
 
-for source in "$skills_source"/*; do
-    [ -d "$source" ] || continue
-    [ -f "$source/SKILL.md" ] || continue
-    target=$skills_dir/$(basename "$source")
-    if link_matches "$target" "$source"; then
-        printf '[OK] %s\n' "$target"
-        continue
-    fi
-    if [ -L "$target" ]; then
-        unlink "$target"
-    fi
-    ln -s "$(canonical_existing "$source")" "$target"
-    printf '[LINK] %s -> %s\n' "$target" "$source"
-    changes=$((changes + 1))
-done
+if [ "$install_skills" -eq 1 ]; then
+    for retired_skill in $retired_skills; do
+        retired_target=$skills_dir/$retired_skill
+        retired_source=$skills_source/$retired_skill
+        if link_matches "$retired_target" "$retired_source"; then
+            unlink "$retired_target"
+            printf '[REMOVE] retired skill link %s\n' "$retired_target"
+            changes=$((changes + 1))
+        fi
+    done
+
+    for source in "$skills_source"/*; do
+        [ -d "$source" ] || continue
+        [ -f "$source/SKILL.md" ] || continue
+        target=$skills_dir/$(basename "$source")
+        if link_matches "$target" "$source"; then
+            printf '[OK] %s\n' "$target"
+            continue
+        fi
+        if [ -L "$target" ]; then
+            unlink "$target"
+        fi
+        ln -s "$(canonical_existing "$source")" "$target"
+        printf '[LINK] %s -> %s\n' "$target" "$source"
+        changes=$((changes + 1))
+    done
+fi
 
 if link_matches "$global_file" "$global_source"; then
     printf '[OK] %s\n' "$global_file"
@@ -247,15 +288,17 @@ else
 fi
 
 validation_errors=0
-for source in "$skills_source"/*; do
-    [ -d "$source" ] || continue
-    [ -f "$source/SKILL.md" ] || continue
-    target=$skills_dir/$(basename "$source")
-    if ! link_matches "$target" "$source" || [ ! -f "$target/SKILL.md" ]; then
-        printf '[ERROR] invalid skill link after install: %s\n' "$target" >&2
-        validation_errors=$((validation_errors + 1))
-    fi
-done
+if [ "$install_skills" -eq 1 ]; then
+    for source in "$skills_source"/*; do
+        [ -d "$source" ] || continue
+        [ -f "$source/SKILL.md" ] || continue
+        target=$skills_dir/$(basename "$source")
+        if ! link_matches "$target" "$source" || [ ! -f "$target/SKILL.md" ]; then
+            printf '[ERROR] invalid skill link after install: %s\n' "$target" >&2
+            validation_errors=$((validation_errors + 1))
+        fi
+    done
+fi
 if ! link_matches "$global_file" "$global_source" || [ ! -f "$global_file" ]; then
     printf '[ERROR] invalid global guidance link after install: %s\n' \
         "$global_file" >&2
@@ -270,4 +313,8 @@ fi
 printf 'Installation passed: %s skill link(s), global guidance, %s change(s).\n' \
     "$skill_count" "$changes"
 printf 'Update with: git -C "%s" pull --ff-only\n' "$repo_root"
-printf 'Then rerun: "%s/scripts/install"\n' "$repo_root"
+if [ "$install_skills" -eq 1 ]; then
+    printf 'Then rerun: "%s/scripts/install"\n' "$repo_root"
+else
+    printf 'Then rerun: "%s/scripts/install" --global-only\n' "$repo_root"
+fi

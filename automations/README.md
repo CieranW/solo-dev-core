@@ -4,6 +4,11 @@ This directory tracks the source definitions for Cieran's Codex workflow automat
 
 All automations should be report-only by default. They may inspect local repos, summarize drift, and recommend next actions, but they must not edit files, create commits, create tags, push branches, deploy services, delete branches, or clean worktrees unless a future task explicitly changes that contract.
 
+Codex cron automations bind to one saved local project. Broad portfolio jobs use
+`solo-dev-core` as their execution anchor while their prompts explicitly inspect
+`/Users/cieranwong/repos`; Cincaria-wide jobs use the saved Cincaria project.
+The checked-in `cwds` record that live anchor, not the full prompt scan scope.
+
 ## Active Set
 
 - `weekly-semver-audit`: release/versioning radar across `/Users/cieranwong/repos`.

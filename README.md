@@ -2,15 +2,18 @@
 
 Personal Codex plugin source for lean, evidence-backed solo-development workflows.
 
-This repository is the durable source for skills, portable global instructions, behavioral evaluations, and automation specs. Universal engineering rules live in `global/AGENTS.md`; repository-specific facts belong in each repository's own `AGENTS.md`; task procedures live in skills.
+This repository is the durable source for skills, portable global instructions, behavioral evaluations, and automation specs. The always-active Engineering Director contract and universal engineering rules live in `global/AGENTS.md`; repository-specific facts belong in each repository's own `AGENTS.md`; task procedures live in skills.
 
 ## Operating model
 
-1. Apply the global lean defaults on every task.
-2. Select only skills whose trigger matches the request.
-3. Compose neighbouring skills only when the next boundary is actually reached.
-4. Gather fresh evidence before completion claims.
-5. Keep Git publication, release, and deployment separately authorized.
+Codex is always the Engineering Director. It owns intent, scope, architecture, execution strategy, delegation, integration, validation, durable knowledge, and completion claims. A skill is a focused reusable procedure the Engineering Director invokes; a workflow is a task-specific composition of skills; a policy is stable decision guidance; a specialist is a temporary bounded subagent; repository memory is durable version-controlled project knowledge; and a domain pack is optional domain guidance layered on this shared system.
+
+1. Apply the Engineering Director contract and global lean defaults on every task.
+2. Classify work proportionally and select only skills whose triggers match.
+3. Work directly when delegation would add more coordination cost than value.
+4. Compose neighbouring skills only when the next boundary is actually reached.
+5. Integrate all specialist findings and gather fresh evidence before completion claims.
+6. Keep Git publication, release, and deployment separately authorized.
 
 There is no mandatory do-everything chain.
 
@@ -18,7 +21,6 @@ There is no mandatory do-everything chain.
 
 | Need | Skill | Boundary |
 | --- | --- | --- |
-| Coordinate explicit multi-boundary or materially risky work | `lead-engineer` | Classifies, delegates read-only investigations, synthesizes, and routes |
 | Adopt an existing repository into project memory | `adopt-project` | Creates the canonical project record and registry entries without application changes |
 | Reconcile project records with repository evidence | `project-status` | Checks read-only or updates project documentation only |
 | Resume one bounded batch from durable project state | `start-work` | Produces one in-scope next action before implementation |
@@ -44,8 +46,8 @@ There is no mandatory do-everything chain.
 
 ## Composition examples
 
-- Explicit coordinated feature: `lead-engineer` → bounded read-only investigations → `implement-change` → `test-and-verify`; review remains risk-based.
-- Explicit coordinated epic: `lead-engineer` → `solo-dev-scope`; only the selected milestone continues.
+- Coordinated feature: Engineering Director orientation → bounded read-only investigations where useful → synthesis → `implement-change` → `test-and-verify`; review remains risk-based.
+- Coordinated epic: Engineering Director classification → `solo-dev-scope`; only the selected milestone continues.
 - Existing repository adoption: `adopt-project` → `repo-compass` → conditional `solo-dev-scope` or `clarify-intent` → `documentation`.
 - Managed repository resumption: `start-work` → `repo-compass` → `project-status`; only an authorized in-scope batch continues to `implement-change`.
 - Batch closeout: `finish-work` → conditional `test-and-verify` → `documentation`; Git publication remains separate.
@@ -65,7 +67,7 @@ Skip any step whose trigger is not present.
 
 ## Example invocations
 
-- `Use $lead-engineer to coordinate this multi-boundary migration, keep specialist work read-only, and return one integrated plan.`
+- `Coordinate this multi-boundary migration, keep specialist work read-only, and return one integrated plan.`
 - `Use $adopt-project to reconstruct this repository into docs/PROJECT.md without changing application code.`
 - `Use $project-status to reconcile docs/PROJECT.md with the current branch and working tree.`
 - `Use $start-work to resume this repository and identify one bounded in-scope batch.`
@@ -188,6 +190,8 @@ git -C /path/to/solo-dev-core pull --ff-only
 
 Existing links immediately see edits to known skills; rerun the installer after
 pulling so newly added skills are linked and the installation is validated.
+The installer also removes the retired `lead-engineer` link when, and only
+when, that link points back to this checkout.
 Machine-local registry paths remain ignored and must be configured separately
 on each machine.
 
@@ -200,8 +204,9 @@ the installer exits without changes on unsupported operating systems.
 
 This Git repository is the portable source. Personal marketplace registration, its configured source path, installed caches, live global instructions, local project paths, and enabled automations are machine-local and are not tracked here.
 
-Marketplace installation is an alternative packaging path for machines that do
-not use the direct-checkout installer. Do not enable both modes together.
+Marketplace installation is an alternative source for the focused skills only;
+the plugin manifest cannot install the always-active global contract. Do not
+enable marketplace skills and direct-checkout skill links together.
 
 When using the plugin path, prefer pointing the personal marketplace directly
 at a reviewed checkout of this repository. An existing machine may retain a
@@ -209,16 +214,21 @@ separate local plugin source for compatibility, but that copy must be
 deliberately reconciled to the intended Git revision before reinstalling;
 changing this repository alone does not update it.
 
-After the configured marketplace source contains the intended cachebuster version:
+Install and validate `global/AGENTS.md` separately from the reviewed checkout,
+then install the skill payload after the configured marketplace source contains
+the intended cachebuster version:
 
 ```bash
+scripts/install --global-only --dry-run
+scripts/install --global-only
+scripts/install --global-only --check
 codex plugin add solo-dev-core@personal
 codex plugin list
 ```
 
 The manifest cachebuster identifies the plugin payload, not a separate SemVer release. Confirm the resolved version and source with `codex plugin list`, then start a new task so Codex loads the refreshed package. To roll back, restore a known reviewed Git revision or matching legacy source copy and reinstall its recorded cachebuster.
 
-Initial marketplace creation and routine reinstall are different operations. Follow the current plugin-creator bootstrap flow only when no local marketplace entry exists; do not rewrite an existing marketplace path during routine refresh. This repository does not automatically install the plugin, change marketplace configuration, overwrite `~/.codex/AGENTS.md`, or activate automations.
+Initial marketplace creation and routine reinstall are different operations. Follow the current plugin-creator bootstrap flow only when no local marketplace entry exists; do not rewrite an existing marketplace path during routine refresh. The global-only installer preflights the destination and never overwrites unrelated guidance. This repository does not automatically install the plugin, change marketplace configuration, or activate automations.
 
 ## Adding or changing a skill
 
@@ -237,6 +247,7 @@ Do not create per-language or per-platform skills merely to repeat the global le
 `evals/scenarios.json` records:
 
 - ordered expected skill compositions;
+- always-active Engineering Director behavior, including valid root-only cases with no selected skill;
 - skills that must not trigger;
 - expected mutation policy;
 - required output characteristics;
@@ -274,7 +285,9 @@ ADRs, the logical registry, and machine-local path mappings.
 
 ## Decisions
 
-- `lead-engineer` is an opt-in coordinator for explicit or materially risky multi-boundary work, not a universal task router.
+- Codex is always the Engineering Director; leadership is an identity and root operating contract, not a skill or optional router.
+- Skills remain focused procedures selected proportionally by the Engineering Director.
+- Legacy requests to use `lead-engineer` retain their coordination intent but no longer require or select a leadership skill.
 - `docs/PROJECT.md` is the only routine project-memory record; adoption, status, start, and finish workflows keep its responsibilities distinct.
 - Start-work remains read-only, while project-status owns explicit record reconciliation and finish-work owns batch closeout.
 - Capture-idea never changes Active or Next, and roadmap-review cannot promote work to Active without an explicit milestone decision.
@@ -284,7 +297,7 @@ ADRs, the logical registry, and machine-local path mappings.
 - `review-changes` remains a bounded-diff defect review.
 - Performance, simplification, architecture assessment, and decision-ready implementation have distinct skills because their evidence and stop conditions differ.
 - `commit-and-push` retains its mandatory SemVer gate.
-- Specialist perspectives remain temporary read-only lenses; domain packs, permanent role skills, and delegated mutation are deferred.
+- Specialist perspectives remain temporary bounded lenses. Read-only work is the default; isolated non-overlapping mutation requires explicit ownership and integration strategy.
 - No language-specific skills, broad reference catalogue, new runtime dependencies, or mandatory workflow chain were added.
 
 ## Automations
