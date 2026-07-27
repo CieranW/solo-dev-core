@@ -61,6 +61,7 @@ Establish concise, evidence-backed project memory for an existing repository.
 - Use `$clarify-intent` only for unresolved material choices.
 - Use `$documentation` for the canonical project file and accepted ADRs.
 - Hand later status reconciliation to `$project-status` and later resumption to `$start-work`.
+- Hand cross-repository visibility for registered projects to `$portfolio-review`.
 
 ## Anti-Patterns
 

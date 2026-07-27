@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portfolio Review"
+  short_description: "Review project status across repositories"
+  default_prompt: "Use $portfolio-review to inspect my registered repositories and report stale or risky project state."

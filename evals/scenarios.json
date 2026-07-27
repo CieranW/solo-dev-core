@@ -576,6 +576,42 @@
           "Changes application code, promotes work to Active, stages, or commits."
         ]
       }
+    },
+    {
+      "id": "portfolio-review-unavailable-read-only",
+      "request": "Review my registered project portfolio without changing anything. Some repositories are not cloned on this machine. Report each milestone, status, last verification, risks, next action, stale records, missing milestones, and Future Idea triggers that may need reconsideration.",
+      "expected": {
+        "skills": ["portfolio-review"],
+        "must_not_select": ["lead-engineer", "adopt-project", "project-status", "roadmap-review", "documentation", "implement-change"],
+        "mutation": "read-only",
+        "output": [
+          "Validate the explicit logical registry and optional machine-local mapping before scanning.",
+          "Represent every registered project and tolerate unmapped, missing, unadopted, or malformed repositories as project-level findings.",
+          "Return portfolio totals, evidence-backed project rows, trigger candidates, and one exact portfolio-level next action."
+        ],
+        "failure_indicators": [
+          "Fails the entire review because one clone is unavailable.",
+          "Repairs project files, changes the registry, promotes an idea, or starts repository work."
+        ]
+      }
+    },
+    {
+      "id": "portfolio-review-local-git",
+      "request": "Run a read-only portfolio review with local Git inspection. Flag dirty working trees and branches ahead of their configured upstreams, but do not fetch, pull, edit, commit, or push.",
+      "expected": {
+        "skills": ["portfolio-review"],
+        "must_not_select": ["lead-engineer", "project-status", "start-work", "commit-and-push"],
+        "mutation": "read-only",
+        "output": [
+          "Inspect local branch, working-tree state, upstream, and local ahead count with optional Git locks disabled.",
+          "State that no fetch occurred and remote freshness is not proven.",
+          "Continue past non-Git directories and per-repository Git failures while preserving their flags."
+        ],
+        "failure_indicators": [
+          "Fetches a remote or mutates Git state to make the report current.",
+          "Calls zero local-ahead commits proof that the remote is synchronized."
+        ]
+      }
     }
   ]
 }

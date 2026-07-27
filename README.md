@@ -25,6 +25,7 @@ There is no mandatory do-everything chain.
 | Close a batch and preserve truthful continuity | `finish-work` | Updates project memory and stops before Git publication |
 | Preserve an idea without expanding active scope | `capture-idea` | Adds or updates one Future Idea and returns to the interrupted task |
 | Reassess future and deferred work | `roadmap-review` | Recommends or applies justified state changes without automatic Active promotion |
+| Review status across registered repositories | `portfolio-review` | Reads project memory and optional local Git state without modifying repositories |
 | Orient in a repository or resume interrupted work | `repo-compass` | Produces a compact evidence-labelled brief |
 | Resolve material ambiguity or compare implementation options | `clarify-intent` | Stops at a plan unless implementation was requested |
 | Shrink an oversized idea to one testable milestone | `solo-dev-scope` | Does not implement |
@@ -50,6 +51,7 @@ There is no mandatory do-everything chain.
 - Batch closeout: `finish-work` → conditional `test-and-verify` → `documentation`; Git publication remains separate.
 - Scope-safe idea interruption: `capture-idea` → `documentation` → resume the original task.
 - Periodic roadmap reassessment: `roadmap-review` → `project-status` CHECK → conditional `documentation`; Active promotion requires an explicit milestone decision.
+- Cross-repository review: `portfolio-review` → conditional owner-selected `project-status`, `roadmap-review`, or `start-work`; the review itself stays read-only.
 - Unfamiliar decision-ready feature: `repo-compass` → `implement-change` → `test-and-verify`.
 - Ambiguous feature: `clarify-intent` → `implement-change` → `test-and-verify`.
 - Oversized product idea: `solo-dev-scope` → `clarify-intent`; implementation remains conditional.
@@ -70,6 +72,7 @@ Skip any step whose trigger is not present.
 - `Use $finish-work to close this batch, update project memory, and preserve one exact next action.`
 - `Use $capture-idea to preserve this idea without changing Active or Next, then return to the current task.`
 - `Use $roadmap-review to deduplicate and reassess Future and Deferred work without promoting anything automatically.`
+- `Use $portfolio-review to inspect registered projects, including unavailable clones and optional local Git state, without changing them.`
 - `Use $repo-compass to resume this repository and identify the exact next action.`
 - `Use $clarify-intent to compare the credible options and return a decision-complete plan only.`
 - `Use $profile-performance to reproduce this latency regression and locate the bottleneck without optimizing it.`
@@ -130,6 +133,20 @@ scripts/project-memory validate-registry --registry registry/projects.json --pat
 Successful commands print a summary and exit zero. Schema, identifier, ADR, or
 mapping errors are written to standard error and exit nonzero. The validator is
 read-only and uses only the Python standard library.
+
+Create a read-only portfolio report from the installed skill:
+
+```bash
+skills/portfolio-review/scripts/portfolio-review \
+  --registry registry/projects.json \
+  --paths registry/paths.local.json \
+  --inspect-git
+```
+
+The report includes every registered project, tolerates unmapped or missing
+clones, and flags stale records, missing milestones, dirty trees, locally ahead
+branches, and date-based Future Idea trigger candidates. Git inspection is
+optional and never fetches, so ahead counts reflect only local upstream refs.
 
 ## Plugin installation and refresh
 
@@ -206,6 +223,7 @@ ADRs, the logical registry, and machine-local path mappings.
 - `docs/PROJECT.md` is the only routine project-memory record; adoption, status, start, and finish workflows keep its responsibilities distinct.
 - Start-work remains read-only, while project-status owns explicit record reconciliation and finish-work owns batch closeout.
 - Capture-idea never changes Active or Next, and roadmap-review cannot promote work to Active without an explicit milestone decision.
+- Portfolio-review reads distributed project state and optional local Git evidence but never repairs repositories or centralizes their detailed status.
 - ADRs preserve durable rationale, not ordinary prioritization or implementation history.
 - `clarify-intent` owns design-option comparison; no `design-first` skill.
 - `review-changes` remains a bounded-diff defect review.
