@@ -357,16 +357,22 @@ class ProjectMemoryTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("required ADR order", result.stderr)
 
-    def test_empty_registry_and_example_mapping_pass(self) -> None:
+    def test_committed_registry_and_example_mapping_pass(self) -> None:
+        registry = REPO_ROOT / "registry" / "projects.json"
         result = self.run_validator(
             "validate-registry",
             "--registry",
-            str(REPO_ROOT / "registry" / "projects.json"),
+            str(registry),
             "--paths",
             str(REPO_ROOT / "registry" / "paths.local.example.json"),
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("0 project(s), 0 local path(s)", result.stdout)
+        project_count = len(
+            json.loads(registry.read_text(encoding="utf-8"))["projects"]
+        )
+        self.assertIn(
+            f"{project_count} project(s), 0 local path(s)", result.stdout
+        )
 
     def test_duplicate_project_identifier_fails(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
