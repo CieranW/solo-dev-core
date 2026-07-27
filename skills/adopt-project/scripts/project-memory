@@ -1,0 +1,553 @@
+#!/usr/bin/env python3
+"""Validate solo-dev-core project-memory documents and registries."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from dataclasses import dataclass
+from datetime import date
+from pathlib import Path, PureWindowsPath
+from typing import Any
+
+
+PROJECT_SECTIONS = [
+    "North Star",
+    "Product Boundaries",
+    "Current Milestone",
+    "Success and Stop Conditions",
+    "Verified Current State",
+    "Active Work",
+    "Next",
+    "Future Ideas",
+    "Deferred",
+    "Decisions",
+    "Risks and Unknowns",
+    "Exact Next Action",
+    "Last Verified",
+]
+PROJECT_FIELDS = {
+    "North Star": {"Outcome", "Intended user"},
+    "Product Boundaries": {"In scope", "Out of scope", "Detailed sources"},
+    "Current Milestone": {"Name", "Outcome", "Status", "Scope"},
+    "Success and Stop Conditions": {"Success", "Stop or pivot when"},
+    "Verified Current State": {"Implemented", "Evidence"},
+    "Active Work": {"Batch", "State", "Branch"},
+    "Next": {"Candidate", "Justification"},
+    "Exact Next Action": {"Action"},
+    "Last Verified": {
+        "At",
+        "Commit",
+        "Branch",
+        "Working tree",
+        "Validation level",
+        "Evidence",
+    },
+}
+MILESTONE_STATUSES = {"Active", "Paused", "Blocked", "Complete", "Uncertain"}
+ACTIVE_WORK_STATES = {"None", "Not started", "In progress", "Blocked", "Complete"}
+WORKING_TREE_STATES = {"clean", "dirty", "unknown"}
+VALIDATION_LEVELS = {"none", "inspection-only", "focused", "full"}
+FUTURE_ID_RE = re.compile(r"FI-(\d{8})-[a-z0-9]+(?:-[a-z0-9]+)*")
+FUTURE_HEADING_RE = re.compile(
+    r"^(?P<id>FI-\d{8}-[a-z0-9]+(?:-[a-z0-9]+)*)\s+[—-]\s+(?P<title>.+)$"
+)
+FUTURE_FIELDS = {
+    "Idea",
+    "Value",
+    "Dependencies",
+    "Reconsider when",
+    "Why deferred",
+    "Related decisions or components",
+    "Captured",
+}
+ADR_SECTIONS = [
+    "Status",
+    "Context",
+    "Decision",
+    "Rationale",
+    "Alternatives",
+    "Consequences",
+    "Revisit Trigger",
+]
+ADR_STATUSES = {"Proposed", "Accepted", "Superseded", "Deprecated", "Rejected"}
+ADR_FILENAME_RE = re.compile(r"ADR-\d{8}-[a-z0-9]+(?:-[a-z0-9]+)*\.md")
+PROJECT_ID_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+REMOTE_RE = re.compile(
+    r"[A-Za-z0-9.-]+/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+"
+)
+FIELD_RE = re.compile(r"^- (?P<key>[A-Za-z][A-Za-z0-9 /-]*):\s*(?P<value>.*)$")
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+
+
+@dataclass
+class ValidationResult:
+    errors: list[str]
+    warnings: list[str]
+
+    @classmethod
+    def empty(cls) -> "ValidationResult":
+        return cls(errors=[], warnings=[])
+
+    def extend(self, other: "ValidationResult") -> None:
+        self.errors.extend(other.errors)
+        self.warnings.extend(other.warnings)
+
+
+class DuplicateJsonKeyError(ValueError):
+    """Raised when JSON contains a duplicate object key."""
+
+
+def reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise DuplicateJsonKeyError(f"duplicate JSON key '{key}'")
+        result[key] = value
+    return result
+
+
+def load_json_object(path: Path, result: ValidationResult) -> dict[str, Any] | None:
+    try:
+        value = json.loads(
+            path.read_text(encoding="utf-8"),
+            object_pairs_hook=reject_duplicate_json_keys,
+        )
+    except FileNotFoundError:
+        result.errors.append(f"{path}: file does not exist")
+        return None
+    except (OSError, UnicodeError, json.JSONDecodeError, DuplicateJsonKeyError) as exc:
+        result.errors.append(f"{path}: invalid JSON: {exc}")
+        return None
+    if not isinstance(value, dict):
+        result.errors.append(f"{path}: top-level JSON value must be an object")
+        return None
+    return value
+
+
+def strip_html_comments(content: str) -> str:
+    return HTML_COMMENT_RE.sub("", content)
+
+
+def parse_h2_sections(content: str) -> tuple[list[str], dict[str, str]]:
+    order: list[str] = []
+    bodies: dict[str, list[str]] = {}
+    current: str | None = None
+    fence: str | None = None
+    for line in strip_html_comments(content).splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("```", "~~~")):
+            marker = stripped[:3]
+            if fence is None:
+                fence = marker
+            elif fence == marker:
+                fence = None
+            if current is not None:
+                bodies[current].append(line)
+            continue
+        if fence is None and line.startswith("## "):
+            current = line[3:].strip()
+            order.append(current)
+            bodies.setdefault(current, [])
+            continue
+        if current is not None:
+            bodies[current].append(line)
+    return order, {name: "\n".join(lines).strip() for name, lines in bodies.items()}
+
+
+def parse_fields(
+    path: Path, section: str, body: str, result: ValidationResult
+) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    for line in body.splitlines():
+        match = FIELD_RE.fullmatch(line)
+        if not match:
+            continue
+        key = match.group("key")
+        value = match.group("value").strip()
+        if key in fields:
+            result.errors.append(f"{path}: section '{section}' repeats field '{key}'")
+        else:
+            fields[key] = value
+    return fields
+
+
+def require_fields(
+    path: Path,
+    section: str,
+    body: str,
+    required: set[str],
+    result: ValidationResult,
+) -> dict[str, str]:
+    fields = parse_fields(path, section, body, result)
+    missing = sorted(required - fields.keys())
+    if missing:
+        result.errors.append(
+            f"{path}: section '{section}' is missing fields: {', '.join(missing)}"
+        )
+    for key in sorted(required & fields.keys()):
+        if not fields[key]:
+            result.errors.append(
+                f"{path}: section '{section}' has an empty field '{key}'"
+            )
+    return fields
+
+
+def split_h3_entries(body: str) -> list[tuple[str, str]]:
+    entries: list[tuple[str, list[str]]] = []
+    current: tuple[str, list[str]] | None = None
+    for line in body.splitlines():
+        if line.startswith("### "):
+            current = (line[4:].strip(), [])
+            entries.append(current)
+        elif current is not None:
+            current[1].append(line)
+    return [(heading, "\n".join(lines).strip()) for heading, lines in entries]
+
+
+def validate_future_ideas(path: Path, body: str, result: ValidationResult) -> None:
+    entries = split_h3_entries(body)
+    if not entries:
+        if body.strip() != "_None._":
+            result.errors.append(
+                f"{path}: section 'Future Ideas' must contain '_None._' "
+                "or structured FI entries"
+            )
+        return
+
+    if "_None._" in body:
+        result.errors.append(
+            f"{path}: section 'Future Ideas' cannot combine '_None._' with entries"
+        )
+
+    seen_ids: set[str] = set()
+    for heading, entry_body in entries:
+        match = FUTURE_HEADING_RE.fullmatch(heading)
+        if not match:
+            result.errors.append(
+                f"{path}: invalid Future Ideas heading '### {heading}'"
+            )
+            continue
+        idea_id = match.group("id")
+        if idea_id in seen_ids:
+            result.errors.append(f"{path}: duplicate Future Idea id '{idea_id}'")
+        seen_ids.add(idea_id)
+        fields = require_fields(
+            path, f"Future Ideas/{idea_id}", entry_body, FUTURE_FIELDS, result
+        )
+        captured = fields.get("Captured")
+        if captured:
+            try:
+                captured_date = date.fromisoformat(captured)
+            except ValueError:
+                result.errors.append(
+                    f"{path}: Future Idea '{idea_id}' has invalid Captured date "
+                    f"'{captured}'"
+                )
+            else:
+                id_match = FUTURE_ID_RE.fullmatch(idea_id)
+                assert id_match is not None
+                if captured_date.strftime("%Y%m%d") != id_match.group(1):
+                    result.errors.append(
+                        f"{path}: Future Idea '{idea_id}' date does not match "
+                        f"Captured '{captured}'"
+                    )
+
+
+def validate_project_file(path: Path) -> ValidationResult:
+    result = ValidationResult.empty()
+    try:
+        content = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        result.errors.append(f"{path}: missing project file")
+        return result
+    except (OSError, UnicodeError) as exc:
+        result.errors.append(f"{path}: cannot read project file: {exc}")
+        return result
+
+    uncommented = strip_html_comments(content)
+    project_titles = [
+        line for line in uncommented.splitlines() if line.startswith("# ")
+    ]
+    if len(project_titles) != 1 or not project_titles[0].startswith("# Project: "):
+        result.errors.append(
+            f"{path}: expected one non-empty '# Project: <name>' heading"
+        )
+    elif not project_titles[0][len("# Project: ") :].strip():
+        result.errors.append(f"{path}: project title must not be empty")
+
+    order, sections = parse_h2_sections(content)
+    if order != PROJECT_SECTIONS:
+        result.errors.append(
+            f"{path}: H2 sections must exactly match the required order: "
+            + ", ".join(PROJECT_SECTIONS)
+        )
+    for name in PROJECT_SECTIONS:
+        if name in sections and not sections[name]:
+            result.errors.append(f"{path}: section '{name}' must not be empty")
+    for section, required in PROJECT_FIELDS.items():
+        if section not in sections:
+            continue
+        fields = require_fields(path, section, sections[section], required, result)
+        if section == "Current Milestone":
+            status = fields.get("Status")
+            if status and status not in MILESTONE_STATUSES:
+                result.errors.append(
+                    f"{path}: Current Milestone Status must be one of: "
+                    + ", ".join(sorted(MILESTONE_STATUSES))
+                )
+        elif section == "Active Work":
+            state = fields.get("State")
+            if state and state not in ACTIVE_WORK_STATES:
+                result.errors.append(
+                    f"{path}: Active Work State must be one of: "
+                    + ", ".join(sorted(ACTIVE_WORK_STATES))
+                )
+        elif section == "Last Verified":
+            tree_state = fields.get("Working tree")
+            if tree_state and tree_state not in WORKING_TREE_STATES:
+                result.errors.append(
+                    f"{path}: Last Verified Working tree must be one of: "
+                    + ", ".join(sorted(WORKING_TREE_STATES))
+                )
+            level = fields.get("Validation level")
+            if level and level not in VALIDATION_LEVELS:
+                result.errors.append(
+                    f"{path}: Last Verified Validation level must be one of: "
+                    + ", ".join(sorted(VALIDATION_LEVELS))
+                )
+    if "Future Ideas" in sections:
+        validate_future_ideas(path, sections["Future Ideas"], result)
+
+    line_count = len(content.splitlines())
+    size = len(content.encode("utf-8"))
+    if line_count > 250:
+        result.warnings.append(
+            f"{path}: project file has {line_count} lines; target is at most 250"
+        )
+    if size > 20_000:
+        result.warnings.append(
+            f"{path}: project file is {size} bytes; target is at most 20000"
+        )
+    return result
+
+
+def validate_adr_file(path: Path) -> ValidationResult:
+    result = ValidationResult.empty()
+    if not ADR_FILENAME_RE.fullmatch(path.name):
+        result.errors.append(
+            f"{path}: ADR filename must match ADR-YYYYMMDD-short-title.md"
+        )
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        result.errors.append(f"{path}: cannot read ADR: {exc}")
+        return result
+    titles = [
+        line
+        for line in strip_html_comments(content).splitlines()
+        if line.startswith("# ")
+    ]
+    if len(titles) != 1 or not titles[0].startswith("# ADR: "):
+        result.errors.append(f"{path}: expected one non-empty '# ADR: <title>' heading")
+    elif not titles[0][len("# ADR: ") :].strip():
+        result.errors.append(f"{path}: ADR title must not be empty")
+    order, sections = parse_h2_sections(content)
+    if order != ADR_SECTIONS:
+        result.errors.append(
+            f"{path}: H2 sections must exactly match the required ADR order: "
+            + ", ".join(ADR_SECTIONS)
+        )
+    for name in ADR_SECTIONS:
+        body = sections.get(name, "")
+        if not body:
+            result.errors.append(f"{path}: ADR section '{name}' must not be empty")
+    status = sections.get("Status", "").strip()
+    if status and status not in ADR_STATUSES:
+        result.errors.append(
+            f"{path}: ADR Status must be one of: "
+            + ", ".join(sorted(ADR_STATUSES))
+        )
+    return result
+
+
+def validate_project(repo: Path) -> tuple[ValidationResult, int]:
+    result = validate_project_file(repo / "docs" / "PROJECT.md")
+    decisions = repo / "docs" / "decisions"
+    adr_paths = sorted(decisions.glob("*.md")) if decisions.is_dir() else []
+    for path in adr_paths:
+        result.extend(validate_adr_file(path))
+    return result, len(adr_paths)
+
+
+def validate_registry_file(
+    registry_path: Path, paths_path: Path | None
+) -> tuple[ValidationResult, int, int]:
+    result = ValidationResult.empty()
+    registry = load_json_object(registry_path, result)
+    if registry is None:
+        return result, 0, 0
+    unknown_top = sorted(set(registry) - {"version", "projects"})
+    if unknown_top:
+        result.errors.append(
+            f"{registry_path}: unknown top-level fields: {', '.join(unknown_top)}"
+        )
+    if registry.get("version") != 1:
+        result.errors.append(f"{registry_path}: version must be the integer 1")
+    projects = registry.get("projects")
+    if not isinstance(projects, list):
+        result.errors.append(f"{registry_path}: projects must be a list")
+        projects = []
+
+    project_ids: set[str] = set()
+    for index, project in enumerate(projects):
+        location = f"{registry_path}: projects[{index}]"
+        if not isinstance(project, dict):
+            result.errors.append(f"{location} must be an object")
+            continue
+        unknown_fields = sorted(set(project) - {"id", "name", "remote"})
+        missing_fields = sorted({"id", "name", "remote"} - project.keys())
+        if unknown_fields:
+            result.errors.append(
+                f"{location} has unknown fields: {', '.join(unknown_fields)}"
+            )
+        if missing_fields:
+            result.errors.append(
+                f"{location} is missing fields: {', '.join(missing_fields)}"
+            )
+        project_id = project.get("id")
+        if not isinstance(project_id, str) or not PROJECT_ID_RE.fullmatch(project_id):
+            result.errors.append(f"{location}.id must be a lowercase kebab-case string")
+        elif project_id in project_ids:
+            result.errors.append(
+                f"{registry_path}: duplicate project id '{project_id}'"
+            )
+        else:
+            project_ids.add(project_id)
+        name = project.get("name")
+        if not isinstance(name, str) or not name.strip():
+            result.errors.append(f"{location}.name must be a non-empty string")
+        remote = project.get("remote")
+        if not isinstance(remote, str) or not REMOTE_RE.fullmatch(remote):
+            result.errors.append(
+                f"{location}.remote must use canonical host/owner/repository form"
+            )
+
+    path_count = 0
+    if paths_path is not None:
+        mapping = load_json_object(paths_path, result)
+        if mapping is not None:
+            unknown_top = sorted(set(mapping) - {"version", "paths"})
+            if unknown_top:
+                result.errors.append(
+                    f"{paths_path}: unknown top-level fields: {', '.join(unknown_top)}"
+                )
+            if mapping.get("version") != 1:
+                result.errors.append(f"{paths_path}: version must be the integer 1")
+            paths = mapping.get("paths")
+            if not isinstance(paths, dict):
+                result.errors.append(f"{paths_path}: paths must be an object")
+            else:
+                path_count = len(paths)
+                for project_id, value in paths.items():
+                    if project_id not in project_ids:
+                        result.errors.append(
+                            f"{paths_path}: path references unknown project id "
+                            f"'{project_id}'"
+                        )
+                    if not isinstance(value, str) or not value.strip():
+                        result.errors.append(
+                            f"{paths_path}: path for '{project_id}' must be "
+                            "a non-empty string"
+                        )
+                    elif not (
+                        Path(value).is_absolute()
+                        or PureWindowsPath(value).is_absolute()
+                    ):
+                        result.errors.append(
+                            f"{paths_path}: path for '{project_id}' must be absolute"
+                        )
+    return result, len(projects), path_count
+
+
+def report_result(
+    result: ValidationResult, success_message: str, failure_label: str
+) -> int:
+    for warning in result.warnings:
+        print(f"[WARN] {warning}")
+    if result.errors:
+        for error in result.errors:
+            print(f"[ERROR] {error}", file=sys.stderr)
+        print(
+            f"{failure_label} failed: {len(result.errors)} error(s), "
+            f"{len(result.warnings)} warning(s)",
+            file=sys.stderr,
+        )
+        return 1
+    print(f"{success_message}, {len(result.warnings)} warning(s)")
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Validate project-memory documents and registries."
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    project_parser = subparsers.add_parser(
+        "validate-project",
+        help="Validate docs/PROJECT.md and optional docs/decisions ADRs.",
+    )
+    project_parser.add_argument(
+        "--repo",
+        type=Path,
+        default=Path.cwd(),
+        help="Repository root containing docs/PROJECT.md (default: current directory).",
+    )
+
+    registry_parser = subparsers.add_parser(
+        "validate-registry",
+        help="Validate the logical registry and an optional local path mapping.",
+    )
+    registry_parser.add_argument(
+        "--registry",
+        type=Path,
+        required=True,
+        help="Logical project registry JSON file.",
+    )
+    registry_parser.add_argument(
+        "--paths",
+        type=Path,
+        help="Optional machine-local path mapping JSON file.",
+    )
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    if args.command == "validate-project":
+        repo = args.repo.resolve()
+        result, adr_count = validate_project(repo)
+        return report_result(
+            result,
+            f"project memory validation passed: {repo / 'docs' / 'PROJECT.md'}, "
+            f"{adr_count} ADR(s)",
+            "project memory validation",
+        )
+    if args.command == "validate-registry":
+        registry = args.registry.resolve()
+        paths = args.paths.resolve() if args.paths is not None else None
+        result, project_count, path_count = validate_registry_file(registry, paths)
+        return report_result(
+            result,
+            f"registry validation passed: {project_count} project(s), "
+            f"{path_count} local path(s)",
+            "registry validation",
+        )
+    raise AssertionError(f"unhandled command: {args.command}")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

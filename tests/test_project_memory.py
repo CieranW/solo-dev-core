@@ -11,8 +11,10 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = REPO_ROOT / "scripts" / "project-memory"
-PROJECT_TEMPLATE = REPO_ROOT / "templates" / "PROJECT.md"
-ADR_TEMPLATE = REPO_ROOT / "templates" / "ADR.md"
+PROJECT_MEMORY_SKILL = REPO_ROOT / "skills" / "adopt-project"
+BUNDLED_VALIDATOR = PROJECT_MEMORY_SKILL / "scripts" / "project-memory"
+PROJECT_TEMPLATE = PROJECT_MEMORY_SKILL / "assets" / "PROJECT.md"
+ADR_TEMPLATE = PROJECT_MEMORY_SKILL / "assets" / "ADR.md"
 PROJECT_SECTIONS = [
     "North Star",
     "Product Boundaries",
@@ -134,6 +136,79 @@ class ProjectMemoryTests(unittest.TestCase):
             result = self.run_validator("validate-project", "--repo", str(root))
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("1 ADR(s)", result.stdout)
+
+    def test_skills_only_payload_supports_project_memory(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as payload_directory,
+            tempfile.TemporaryDirectory() as target_directory,
+            tempfile.TemporaryDirectory() as registry_directory,
+        ):
+            payload = Path(payload_directory)
+            shutil.copytree(REPO_ROOT / "skills", payload / "skills")
+            (payload / ".codex-plugin").mkdir()
+            shutil.copyfile(
+                REPO_ROOT / ".codex-plugin" / "plugin.json",
+                payload / ".codex-plugin" / "plugin.json",
+            )
+
+            installed_skill = payload / "skills" / "adopt-project"
+            target = Path(target_directory)
+            (target / "docs").mkdir()
+            shutil.copyfile(
+                installed_skill / "assets" / "PROJECT.md",
+                target / "docs" / "PROJECT.md",
+            )
+            project_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(installed_skill / "scripts" / "project-memory"),
+                    "validate-project",
+                    "--repo",
+                    str(target),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(project_result.returncode, 0, project_result.stderr)
+
+            registry_root = Path(registry_directory)
+            registry = self.write_registry(registry_root, [])
+            paths = registry_root / "paths.local.json"
+            paths.write_text(
+                json.dumps({"version": 1, "paths": {}}),
+                encoding="utf-8",
+            )
+            registry_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(installed_skill / "scripts" / "project-memory"),
+                    "validate-registry",
+                    "--registry",
+                    str(registry),
+                    "--paths",
+                    str(paths),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(registry_result.returncode, 0, registry_result.stderr)
+
+        lifecycle_contracts = "\n".join(
+            (REPO_ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
+            for name in (
+                "adopt-project",
+                "project-status",
+                "start-work",
+                "finish-work",
+                "capture-idea",
+                "roadmap-review",
+            )
+        )
+        self.assertNotIn("`templates/PROJECT.md`", lifecycle_contracts)
+        self.assertNotIn("`templates/ADR.md`", lifecycle_contracts)
+        self.assertNotIn("`registry/projects.json`", lifecycle_contracts)
 
     def test_every_required_project_section_is_enforced(self) -> None:
         for section in PROJECT_SECTIONS:

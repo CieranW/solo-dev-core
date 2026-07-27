@@ -1,6 +1,6 @@
 {
   "name": "solo-dev-core",
-  "version": "1.0.0+codex.20260727030331",
-  "description": "Lean solo-developer workflows for project continuity, orientation, planning, diagnosis, profiling, architecture, simplification, implementation, verification, and shipping.",
+  "version": "1.0.0+codex.20260727032448",
+  "description": "Lean solo-developer workflows for project continuity, coordination, planning, implementation, verification, and shipping.",
   "skills": "./skills/"
 }

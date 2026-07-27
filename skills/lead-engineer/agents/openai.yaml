@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lead Engineer"
+  short_description: "Coordinate complex engineering work economically"
+  default_prompt: "Use $lead-engineer to classify and coordinate this multi-boundary engineering task."

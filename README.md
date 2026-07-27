@@ -18,10 +18,13 @@ There is no mandatory do-everything chain.
 
 | Need | Skill | Boundary |
 | --- | --- | --- |
+| Coordinate explicit multi-boundary or materially risky work | `lead-engineer` | Classifies, delegates read-only investigations, synthesizes, and routes |
 | Adopt an existing repository into project memory | `adopt-project` | Creates the canonical project record and registry entries without application changes |
 | Reconcile project records with repository evidence | `project-status` | Checks read-only or updates project documentation only |
 | Resume one bounded batch from durable project state | `start-work` | Produces one in-scope next action before implementation |
 | Close a batch and preserve truthful continuity | `finish-work` | Updates project memory and stops before Git publication |
+| Preserve an idea without expanding active scope | `capture-idea` | Adds or updates one Future Idea and returns to the interrupted task |
+| Reassess future and deferred work | `roadmap-review` | Recommends or applies justified state changes without automatic Active promotion |
 | Orient in a repository or resume interrupted work | `repo-compass` | Produces a compact evidence-labelled brief |
 | Resolve material ambiguity or compare implementation options | `clarify-intent` | Stops at a plan unless implementation was requested |
 | Shrink an oversized idea to one testable milestone | `solo-dev-scope` | Does not implement |
@@ -40,9 +43,13 @@ There is no mandatory do-everything chain.
 
 ## Composition examples
 
+- Explicit coordinated feature: `lead-engineer` → bounded read-only investigations → `implement-change` → `test-and-verify`; review remains risk-based.
+- Explicit coordinated epic: `lead-engineer` → `solo-dev-scope`; only the selected milestone continues.
 - Existing repository adoption: `adopt-project` → `repo-compass` → conditional `solo-dev-scope` or `clarify-intent` → `documentation`.
 - Managed repository resumption: `start-work` → `repo-compass` → `project-status`; only an authorized in-scope batch continues to `implement-change`.
 - Batch closeout: `finish-work` → conditional `test-and-verify` → `documentation`; Git publication remains separate.
+- Scope-safe idea interruption: `capture-idea` → `documentation` → resume the original task.
+- Periodic roadmap reassessment: `roadmap-review` → `project-status` CHECK → conditional `documentation`; Active promotion requires an explicit milestone decision.
 - Unfamiliar decision-ready feature: `repo-compass` → `implement-change` → `test-and-verify`.
 - Ambiguous feature: `clarify-intent` → `implement-change` → `test-and-verify`.
 - Oversized product idea: `solo-dev-scope` → `clarify-intent`; implementation remains conditional.
@@ -56,10 +63,13 @@ Skip any step whose trigger is not present.
 
 ## Example invocations
 
+- `Use $lead-engineer to coordinate this multi-boundary migration, keep specialist work read-only, and return one integrated plan.`
 - `Use $adopt-project to reconstruct this repository into docs/PROJECT.md without changing application code.`
 - `Use $project-status to reconcile docs/PROJECT.md with the current branch and working tree.`
 - `Use $start-work to resume this repository and identify one bounded in-scope batch.`
 - `Use $finish-work to close this batch, update project memory, and preserve one exact next action.`
+- `Use $capture-idea to preserve this idea without changing Active or Next, then return to the current task.`
+- `Use $roadmap-review to deduplicate and reassess Future and Deferred work without promoting anything automatically.`
 - `Use $repo-compass to resume this repository and identify the exact next action.`
 - `Use $clarify-intent to compare the credible options and return a decision-complete plan only.`
 - `Use $profile-performance to reproduce this latency regression and locate the bottleneck without optimizing it.`
@@ -82,9 +92,9 @@ The copy is deliberate and is not performed by repository validation. Repository
 ## Project memory contracts
 
 The project-memory foundation keeps detailed state in the repository that owns
-it. A managed repository uses one concise `docs/PROJECT.md`, based on
-`templates/PROJECT.md`, plus optional durable decisions under
-`docs/decisions/` using `templates/ADR.md`.
+it. A managed repository uses one concise `docs/PROJECT.md`, based on the
+bundled `skills/adopt-project/assets/PROJECT.md`, plus optional durable
+decisions under `docs/decisions/` using the bundled `ADR.md`.
 
 Validate a managed repository without modifying it:
 
@@ -97,6 +107,13 @@ use `FI-YYYYMMDD-short-title` identifiers and must record value, dependencies, a
 concrete reconsideration trigger, the reason for deferral, related context, and
 the capture date. ADR filenames use `ADR-YYYYMMDD-short-title.md`.
 
+Use ADRs only for durable product-boundary, public-contract, data, security,
+deployment, compatibility, migration, dependency, or architecture decisions
+whose rationale will matter later. Do not create ADRs for routine
+prioritization, naming, local refactors, or reversible implementation details.
+Every ADR records status, context, decision, rationale, alternatives,
+consequences, and a revisit trigger.
+
 `registry/projects.json` is the committed logical registry. It stores only a
 project ID, display name, and canonical remote in `host/owner/repository` form.
 Machine-specific absolute paths belong in the ignored
@@ -106,8 +123,8 @@ Machine-specific absolute paths belong in the ignored
 Validate the logical registry alone or together with a local mapping:
 
 ```bash
-scripts/project-memory validate-registry
-scripts/project-memory validate-registry --paths registry/paths.local.example.json
+scripts/project-memory validate-registry --registry registry/projects.json
+scripts/project-memory validate-registry --registry registry/projects.json --paths registry/paths.local.example.json
 ```
 
 Successful commands print a summary and exit zero. Schema, identifier, ADR, or
@@ -116,16 +133,20 @@ read-only and uses only the Python standard library.
 
 ## Plugin installation and refresh
 
-The local personal marketplace must point at the machine's `solo-dev-core` source copy. Marketplace configuration is machine-local and is not tracked here.
+This Git repository is the portable source. Personal marketplace registration, its configured source path, installed caches, live global instructions, local project paths, and enabled automations are machine-local and are not tracked here.
 
-After updating that source copy:
+On a new machine, prefer pointing the personal marketplace directly at a reviewed checkout of this repository. An existing machine may retain a separate local plugin source for compatibility, but that copy must be deliberately reconciled to the intended Git revision before reinstalling; changing this repository alone does not update it.
+
+After the configured marketplace source contains the intended cachebuster version:
 
 ```bash
 codex plugin add solo-dev-core@personal
 codex plugin list
 ```
 
-The repository manifest uses a Codex cachebuster so reinstalling picks up changed skills. Start a new task after reinstalling so Codex loads the refreshed package. This repository does not automatically install the plugin, change marketplace configuration, or overwrite `~/.codex/AGENTS.md`.
+The manifest cachebuster identifies the plugin payload, not a separate SemVer release. Confirm the resolved version and source with `codex plugin list`, then start a new task so Codex loads the refreshed package. To roll back, restore a known reviewed Git revision or matching legacy source copy and reinstall its recorded cachebuster.
+
+Initial marketplace creation and routine reinstall are different operations. Follow the current plugin-creator bootstrap flow only when no local marketplace entry exists; do not rewrite an existing marketplace path during routine refresh. This repository does not automatically install the plugin, change marketplace configuration, overwrite `~/.codex/AGENTS.md`, or activate automations.
 
 ## Adding or changing a skill
 
@@ -168,7 +189,7 @@ No package install is required for repository validation:
 
 ```bash
 scripts/validate-skills --strict-overlap
-scripts/project-memory validate-registry
+scripts/project-memory validate-registry --registry registry/projects.json
 python3 -m unittest discover -s tests -p 'test_*.py'
 git diff --check
 ```
@@ -181,12 +202,16 @@ ADRs, the logical registry, and machine-local path mappings.
 
 ## Decisions
 
+- `lead-engineer` is an opt-in coordinator for explicit or materially risky multi-boundary work, not a universal task router.
 - `docs/PROJECT.md` is the only routine project-memory record; adoption, status, start, and finish workflows keep its responsibilities distinct.
 - Start-work remains read-only, while project-status owns explicit record reconciliation and finish-work owns batch closeout.
+- Capture-idea never changes Active or Next, and roadmap-review cannot promote work to Active without an explicit milestone decision.
+- ADRs preserve durable rationale, not ordinary prioritization or implementation history.
 - `clarify-intent` owns design-option comparison; no `design-first` skill.
 - `review-changes` remains a bounded-diff defect review.
 - Performance, simplification, architecture assessment, and decision-ready implementation have distinct skills because their evidence and stop conditions differ.
 - `commit-and-push` retains its mandatory SemVer gate.
+- Specialist perspectives remain temporary read-only lenses; domain packs, permanent role skills, and delegated mutation are deferred.
 - No language-specific skills, broad reference catalogue, new runtime dependencies, or mandatory workflow chain were added.
 
 ## Automations
